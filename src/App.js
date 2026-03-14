@@ -61,8 +61,8 @@ function fileToB64(file, maxWidth=1200, quality=0.72) {
 }
 
 // Extra compression for bible images (more aggressive)
-function fileToB64Bible(file) { return fileToB64(file, 900, 0.60); }
-function fileToB64Bg(file) { return fileToB64(file, 1000, 0.65); }
+function fileToB64Bible(file) { return fileToB64(file, 480, 0.40); }
+function fileToB64Bg(file) { return fileToB64(file, 600, 0.45); }
 
 const G = {
   gold:"#D4AF37", gold2:"#8B6914", gold3:"#F5E27A",
@@ -194,6 +194,7 @@ export default function App({ user, onLogout }) {
 
   const handleBibleImages = async(files)=>{
     const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,20);
+    if(arr.length>8) alert("Tipp: Für beste Performance auf dem Handy maximal 8 Bilder auf einmal wählen.");
     const conv = await Promise.all(arr.map(fileToB64Bible));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
@@ -203,7 +204,7 @@ export default function App({ user, onLogout }) {
     setSavingPost(true);
     try {
       // Extra compress images before saving
-      const compressDataUrl = (dataUrl, maxW=600, q=0.45) => new Promise(res=>{
+      const compressDataUrl = (dataUrl, maxW=480, q=0.35) => new Promise(res=>{
         const img=new Image();
         img.onload=()=>{
           const c=document.createElement("canvas");
