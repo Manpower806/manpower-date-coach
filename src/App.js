@@ -154,6 +154,9 @@ export default function App({ user, onLogout }) {
   const bibleImageRef = useRef();
   const bibleBgRef = useRef();
   const [carouselIdx, setCarouselIdx] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalIdx, setModalIdx] = useState(0);
+  const modalTouchX = useRef(null);
   const touchStartX = useRef(null);
 
   useEffect(()=>{
@@ -455,7 +458,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"} {user?.username?.toUpperCase()}</span>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
-            <button onClick={onLogout} style={{...gc,background:"rgba(3,2,1,.6)",color:"rgba(212,175,55,.4)",padding:"3px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:16,border:"1px solid rgba(212,175,55,.15)"}}>LOGOUT</button>
+            <button className="mgbtn" onClick={onLogout} style={{background:"linear-gradient(135deg,#3d2800,#7a5500,#D4AF37,#F5E27A,#D4AF37,#7a5500,#3d2800)",backgroundSize:"250% auto",border:"none",borderRadius:16,padding:"7px 16px",color:"#1a0d00",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:8,letterSpacing:3,cursor:"pointer",animation:"shimmer 3s linear infinite",boxShadow:"0 3px 14px rgba(212,175,55,.35)",textShadow:"0 1px 2px rgba(0,0,0,.4)"}}>🚪 LOGOUT</button>
           </div>
         </header>
 
@@ -946,16 +949,18 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           }catch{}
                           return null;
                         })()}
-                        {/* Text/content image layer with enhanced text visibility */}
+                        {/* Dark overlay for better text contrast */}
+                        {(()=>{ let b=false; try{b=!!JSON.parse(selectedEntry?.blend_modes||"[]")[carouselIdx];}catch{} return b?<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.28)",zIndex:3,pointerEvents:"none"}}/>:null; })()}
+                        {/* Text image layer */}
                         {(()=>{
                           let blendActive=false;
                           try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");blendActive=!!bm[carouselIdx];}catch{}
                           return <img src={imgs[carouselIdx]} alt="" style={{
                             position:"absolute",inset:0,width:"100%",height:"100%",
-                            objectFit:"cover",objectPosition:"center",display:"block",zIndex:2,
+                            objectFit:"cover",objectPosition:"center",display:"block",zIndex:4,
                             mixBlendMode:blendActive?"screen":"normal",
                             filter:blendActive
-                              ?"brightness(1.4) contrast(1.3) drop-shadow(0px 0px 3px #000) drop-shadow(0px 0px 6px #000) drop-shadow(0px 0px 12px #000) drop-shadow(2px 2px 0px #000) drop-shadow(-2px -2px 0px #000) drop-shadow(2px -2px 0px #000) drop-shadow(-2px 2px 0px #000)"
+                              ?"brightness(1.6) contrast(1.5) drop-shadow(0px 0px 2px #000) drop-shadow(0px 0px 5px #000) drop-shadow(0px 0px 10px #000) drop-shadow(3px 3px 0px #000) drop-shadow(-3px -3px 0px #000) drop-shadow(3px -3px 0px #000) drop-shadow(-3px 3px 0px #000)"
                               :"none"
                           }}/>;
                         })()}
@@ -1139,6 +1144,70 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
         </div>
       </div>
+
+      {/* ── FULLSCREEN MODAL ── */}
+      {modalOpen&&(()=>{
+        let imgs=[];
+        try{imgs=JSON.parse(selectedEntry?.image_url||"[]");}catch{imgs=[selectedEntry?.image_url];}
+        const blendActive=(i)=>{try{return JSON.parse(selectedEntry?.blend_modes||"[]")[i]||false;}catch{return false;}};
+        const bgImg=selectedEntry?.bg_image;
+        return (
+          <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.96)",display:"flex",flexDirection:"column"}}
+            onTouchStart={e=>{modalTouchX.current=e.touches[0].clientX;}}
+            onTouchEnd={e=>{
+              const dx=modalTouchX.current-e.changedTouches[0].clientX;
+              if(Math.abs(dx)>40){
+                if(dx>0&&modalIdx<imgs.length-1) setModalIdx(i=>i+1);
+                if(dx<0&&modalIdx>0) setModalIdx(i=>i-1);
+              }
+              modalTouchX.current=null;
+            }}
+            onClick={e=>{
+              // Close when tapping background (not on image/buttons)
+              if(e.target===e.currentTarget) setModalOpen(false);
+            }}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid rgba(212,175,55,.15)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2,color:"rgba(212,175,55,.6)"}}>{modalIdx+1} / {imgs.length}</div>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.35)"}}>Tippe außerhalb zum Schließen</div>
+                <button onClick={()=>setModalOpen(false)}
+                  style={{background:"rgba(212,175,55,.12)",border:"1px solid rgba(212,175,55,.3)",color:"#D4AF37",padding:"7px 18px",cursor:"pointer",borderRadius:18,fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:2}}>
+                  ✕
+                </button>
+              </div>
+            </div>
+            {/* Image */}
+            <div style={{flex:1,position:"relative",overflow:"hidden"}}>
+              {blendActive(modalIdx)&&bgImg&&(
+                <img src={bgImg} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",zIndex:1}}/>
+              )}
+              <img src={imgs[modalIdx]} alt="" style={{
+                position:"absolute",inset:0,width:"100%",height:"100%",
+                objectFit:"contain",objectPosition:"center",zIndex:2,
+                mixBlendMode:blendActive(modalIdx)?"screen":"normal",
+                filter:blendActive(modalIdx)
+                  ?"brightness(1.4) contrast(1.3) drop-shadow(0px 0px 3px #000) drop-shadow(0px 0px 8px #000) drop-shadow(2px 2px 0px #000) drop-shadow(-2px -2px 0px #000) drop-shadow(2px -2px 0px #000) drop-shadow(-2px 2px 0px #000)"
+                  :"none"
+              }}/>
+              {/* Arrows */}
+              {modalIdx>0&&<button onClick={()=>setModalIdx(i=>i-1)}
+                style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>‹</button>}
+              {modalIdx<imgs.length-1&&<button onClick={()=>setModalIdx(i=>i+1)}
+                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>›</button>}
+            </div>
+            {/* Dots */}
+            {imgs.length>1&&(
+              <div style={{display:"flex",justifyContent:"center",gap:6,padding:"12px 0",borderTop:"1px solid rgba(212,175,55,.1)"}}>
+                {imgs.map((_,i)=>(
+                  <div key={i} onClick={()=>setModalIdx(i)}
+                    style={{width:modalIdx===i?20:7,height:7,borderRadius:4,background:modalIdx===i?"#D4AF37":"rgba(212,175,55,.25)",cursor:"pointer",transition:"all .25s"}}/>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
