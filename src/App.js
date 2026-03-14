@@ -105,10 +105,15 @@ export default function App({ user, onLogout }) {
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newImage, setNewImage] = useState(null);
+  const [newImages, setNewImages] = useState([]); // up to 12
+  const [blendModes, setBlendModes] = useState([]); // per-image blend mode
+  const [newBgImage, setNewBgImage] = useState(null);
+  const [useBgImage, setUseBgImage] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const bibleImageRef = useRef();
+  const bibleBgRef = useRef();
+  const [carouselIdx, setCarouselIdx] = useState(0);
 
   useEffect(()=>{
     if(mainTab==="bible") loadBible();
@@ -163,10 +168,16 @@ export default function App({ user, onLogout }) {
   };
 
   // Bible functions
-  const handleBibleImage = async(file)=>{
+  const handleBgImage = async(file)=>{
     if(!file||!file.type.startsWith("image/")) return;
     const b64 = await fileToB64(file);
-    setNewImage(b64);
+    setNewBgImage(b64);
+  };
+
+  const handleBibleImages = async(files)=>{
+    const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,12);
+    const conv = await Promise.all(arr.map(fileToB64));
+    setNewImages(prev=>[...prev,...conv].slice(0,12));
   };
 
   const savePost = async()=>{
@@ -175,13 +186,17 @@ export default function App({ user, onLogout }) {
     await supabase.from("library").insert({
       title: newTitle.trim(),
       content: newContent.trim(),
-      image_url: newImage?.dataUrl || null,
+      image_url: newImages.length>0 ? JSON.stringify(newImages.map(i=>i.dataUrl)) : null,
+      bg_image: useBgImage && newBgImage ? newBgImage.dataUrl : null,
+      blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
       created_by: user.username,
     });
-    setNewTitle(""); setNewContent(""); setNewImage(null); setShowNewPost(false);
+    setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
     await loadBible();
     setSavingPost(false);
   };
+
+  const openEntry = (entry)=>{ setSelectedEntry(entry); setCarouselIdx(0); };
 
   const deletePost = async(id)=>{
     setDeletingId(id);
@@ -684,20 +699,76 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
                 <SL>BILD HINZUFÜGEN (optional)</SL>
                 <div className="dz" onClick={()=>bibleImageRef.current?.click()}
-                  style={{...gc,padding:"14px",textAlign:"center",marginBottom:10,borderStyle:"dashed",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.6)",cursor:"pointer"}}>
-                  {newImage?(
-                    <div style={{position:"relative"}}>
-                      <img src={newImage.dataUrl} alt="" style={{width:"100%",maxHeight:160,objectFit:"cover",borderRadius:8,display:"block"}}/>
-                      <button onClick={e=>{e.stopPropagation();setNewImage(null);}} style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.8)",border:"none",color:"#ff7b7b",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:10}}>✕</button>
+                  style={{...gc,padding:"12px",textAlign:"center",marginBottom:8,borderStyle:"dashed",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.6)",cursor:"pointer"}}>
+                  <div style={{fontSize:18,opacity:.4,marginBottom:3}}>🖼️</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Bilder hinzufügen (bis zu 12)</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>{newImages.length}/12 ausgewählt</div>
+                </div>
+                <input ref={bibleImageRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>handleBibleImages(e.target.files)}/>
+                {/* BG Image Option */}
+                <div style={{...gc,padding:"12px",marginBottom:10,borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.65)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:useBgImage?10:0}}>
+                    <div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:G.gold,marginBottom:2}}>🖼️ HINTERGRUNDBILD</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted}}>Eigenes Bild leicht transparent im Hintergrund</div>
                     </div>
-                  ):(
-                    <>
-                      <div style={{fontSize:20,opacity:.4,marginBottom:4}}>🖼️</div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Bild hinzufügen</div>
-                    </>
+                    <div onClick={()=>setUseBgImage(s=>!s)}
+                      style={{width:44,height:24,borderRadius:12,background:useBgImage?"rgba(212,175,55,.8)":"rgba(255,255,255,.1)",cursor:"pointer",position:"relative",transition:"all .25s",border:"1px solid rgba(212,175,55,.3)"}}>
+                      <div style={{position:"absolute",top:2,left:useBgImage?20:2,width:18,height:18,borderRadius:"50%",background:useBgImage?G.gold3:"rgba(212,175,55,.4)",transition:"all .25s"}}/>
+                    </div>
+                  </div>
+                  {useBgImage&&(
+                    <div>
+                      <div className="dz" onClick={()=>bibleBgRef.current?.click()}
+                        style={{...gc,padding:"10px",textAlign:"center",borderStyle:"dashed",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
+                        {newBgImage?(
+                          <div style={{position:"relative"}}>
+                            <img src={newBgImage.dataUrl} alt="" style={{width:"100%",height:80,objectFit:"cover",borderRadius:8,display:"block",opacity:.7}}/>
+                            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:2}}>ÄNDERN</div>
+                            <button onClick={e=>{e.stopPropagation();setNewBgImage(null);}}
+                              style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.8)",border:"none",color:"#ff7b7b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:10}}>✕</button>
+                          </div>
+                        ):(
+                          <>
+                            <div style={{fontSize:18,opacity:.4,marginBottom:3}}>🌅</div>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Hintergrundbild wählen</div>
+                          </>
+                        )}
+                      </div>
+                      <input ref={bibleBgRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleBgImage(e.target.files[0])}/>
+                    </div>
                   )}
                 </div>
-                <input ref={bibleImageRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleBibleImage(e.target.files[0])}/>
+                {newImages.length>0&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+                    {newImages.map((img,i)=>(
+                      <div key={i} style={{...gc,overflow:"hidden",borderColor:"rgba(212,175,55,.2)"}}>
+                        <div style={{position:"relative"}}>
+                          <img src={img.dataUrl} alt="" style={{width:"100%",height:80,objectFit:"cover",display:"block"}}/>
+                          <button onClick={()=>setNewImages(prev=>prev.filter((_,j)=>j!==i))}
+                            style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.85)",border:"none",color:"#ff7b7b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                          <div style={{position:"absolute",bottom:4,left:6,fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.7)",background:"rgba(0,0,0,.6)",padding:"2px 6px",borderRadius:8}}>Bild {i+1}</div>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"rgba(3,2,1,.6)"}}>
+                          <div>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:G.gold,letterSpacing:1}}>TEXT-BLEND MODUS</div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>Schwarzer Hintergrund wird unsichtbar</div>
+                          </div>
+                          <div onClick={()=>setBlendModes(prev=>{const n=[...prev];n[i]=!n[i];return n;})}
+                            style={{width:38,height:20,borderRadius:10,background:blendModes[i]?"rgba(212,175,55,.8)":"rgba(255,255,255,.1)",cursor:"pointer",position:"relative",transition:"all .25s",border:"1px solid rgba(212,175,55,.25)",flexShrink:0}}>
+                            <div style={{position:"absolute",top:2,left:blendModes[i]?18:2,width:14,height:14,borderRadius:"50%",background:blendModes[i]?G.gold3:"rgba(212,175,55,.4)",transition:"all .25s"}}/>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {newImages.length<12&&(
+                      <div className="dz" onClick={()=>bibleImageRef.current?.click()}
+                        style={{padding:"12px",textAlign:"center",border:"1px dashed rgba(212,175,55,.2)",borderRadius:10,color:"rgba(212,175,55,.35)",fontSize:13,background:"rgba(3,2,1,.5)",fontFamily:"'Cinzel',serif",letterSpacing:2}}>
+                        + BILD HINZUFÜGEN
+                      </div>
+                    )}
+                  </div>
+                )}
                 <SL>INHALT</SL>
                 <textarea value={newContent} onChange={e=>setNewContent(e.target.value)} placeholder="Schreibe deinen Beitrag..."
                   rows={6} style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.7,marginBottom:14,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
@@ -705,7 +776,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   <MBtn onClick={savePost} disabled={savingPost||!newTitle.trim()||!newContent.trim()}>
                     {savingPost?"SPEICHERE…":"💾  SPEICHERN"}
                   </MBtn>
-                  <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImage(null);}}
+                  <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
                     style={{...gc,flex:"0 0 auto",background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"12px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,borderRadius:10,border:"1px solid rgba(212,175,55,.15)"}}>
                     ABBRECHEN
                   </button>
@@ -715,14 +786,54 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
             {/* Single entry view */}
             {selectedEntry&&(
-              <div style={{animation:"fadeUp .3s ease"}}>
+              <div style={{animation:"fadeUp .3s ease",position:"relative"}}>
+                {/* Background image overlay */}
+                {selectedEntry.bg_image&&(
+                  <div style={{position:"fixed",inset:0,zIndex:0,backgroundImage:`url(${selectedEntry.bg_image})`,backgroundSize:"cover",backgroundPosition:"center",opacity:.18,pointerEvents:"none"}}/>
+                )}
+                <div style={{position:"relative",zIndex:1}}>
                 <button onClick={()=>setSelectedEntry(null)}
                   style={{...gc,background:"rgba(3,2,1,.7)",color:G.gold,padding:"8px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,borderRadius:18,border:`1px solid rgba(212,175,55,.2)`,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>
                   ← ZURÜCK
                 </button>
-                {selectedEntry.image_url&&(
-                  <img src={selectedEntry.image_url} alt="" style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:12,marginBottom:12,border:"1px solid rgba(212,175,55,.2)"}}/>
-                )}
+                {selectedEntry.image_url&&(()=>{
+                  let imgs=[];
+                  try{imgs=JSON.parse(selectedEntry.image_url);}catch{imgs=[selectedEntry.image_url];}
+                  if(!imgs.length) return null;
+                  return (
+                    <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
+                      {/* Main image */}
+                      <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)"}}>
+                        <img src={imgs[carouselIdx]} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",mixBlendMode:(()=>{try{const bm=JSON.parse(entry.blend_modes||selectedEntry?.blend_modes||"[]");return bm[carouselIdx]?"screen":"normal";}catch{return "normal";}})()}}/>
+                        {/* Left arrow */}
+                        {imgs.length>1&&carouselIdx>0&&(
+                          <button onClick={()=>setCarouselIdx(i=>i-1)}
+                            style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.55)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>‹</button>
+                        )}
+                        {/* Right arrow */}
+                        {imgs.length>1&&carouselIdx<imgs.length-1&&(
+                          <button onClick={()=>setCarouselIdx(i=>i+1)}
+                            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.55)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>›</button>
+                        )}
+                        {/* Counter top right */}
+                        {imgs.length>1&&(
+                          <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:12,backdropFilter:"blur(4px)"}}>
+                            {carouselIdx+1}/{imgs.length}
+                          </div>
+                        )}
+                      </div>
+                      {/* Dot indicators */}
+                      {imgs.length>1&&(
+                        <div style={{display:"flex",justifyContent:"center",gap:5,padding:"8px 0",background:"rgba(3,2,1,.6)"}}>
+                          {imgs.map((_,i)=>(
+                            <div key={i} onClick={()=>setCarouselIdx(i)}
+                              style={{width:carouselIdx===i?18:6,height:6,borderRadius:3,background:carouselIdx===i?"#D4AF37":"rgba(212,175,55,.3)",cursor:"pointer",transition:"all .25s"}}/>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div style={{...gc,padding:"16px",background:"rgba(3,2,1,.78)"}}>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>{selectedEntry.title}</div>
                   <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>{selectedEntry.content}</div>
@@ -736,6 +847,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     </button>
                   )}
                 </div>
+                </div>{/* end relative z-1 */}
               </div>
             )}
 
@@ -751,11 +863,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:9}}>
                     {bibleEntries.map(entry=>(
-                      <div key={entry.id} className="rc" onClick={()=>setSelectedEntry(entry)}
+                      <div key={entry.id} className="rc" onClick={()=>openEntry(entry)}
                         style={{...gc,overflow:"hidden",borderColor:"rgba(212,175,55,.16)",background:"rgba(3,2,1,.74)"}}>
-                        {entry.image_url&&(
-                          <img src={entry.image_url} alt="" style={{width:"100%",height:140,objectFit:"cover",display:"block"}}/>
-                        )}
+                        {entry.image_url&&(()=>{
+                          let imgs=[];
+                          try{imgs=JSON.parse(entry.image_url);}catch{imgs=[entry.image_url];}
+                          return imgs[0]&&<img src={imgs[0]} alt="" style={{width:"100%",height:130,objectFit:"cover",display:"block"}}/>;
+                        })()}
                         <div style={{padding:"12px 13px"}}>
                           <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:G.gold,marginBottom:5,lineHeight:1.4}}>{entry.title}</div>
                           <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
