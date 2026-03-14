@@ -38,14 +38,31 @@ function loadLocal() {
   catch { return {totalAnalyses:0,totalOpeners:0}; }
 }
 function saveLocal(d) { try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch{} }
-function fileToB64(file) {
+function fileToB64(file, maxWidth=1200, quality=0.72) {
   return new Promise((res,rej)=>{
     const reader=new FileReader();
-    reader.onload=e=>res({base64:e.target.result.split(",")[1],mediaType:e.target.result.split(";")[0].split(":")[1],dataUrl:e.target.result});
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");
+        let w=img.width, h=img.height;
+        if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        const dataUrl=canvas.toDataURL("image/jpeg",quality);
+        res({base64:dataUrl.split(",")[1],mediaType:"image/jpeg",dataUrl});
+      };
+      img.onerror=rej;
+      img.src=e.target.result;
+    };
     reader.onerror=rej;
     reader.readAsDataURL(file);
   });
 }
+
+// Extra compression for bible images (more aggressive)
+function fileToB64Bible(file) { return fileToB64(file, 900, 0.60); }
+function fileToB64Bg(file) { return fileToB64(file, 1000, 0.65); }
 
 const G = {
   gold:"#D4AF37", gold2:"#8B6914", gold3:"#F5E27A",
@@ -170,13 +187,13 @@ export default function App({ user, onLogout }) {
   // Bible functions
   const handleBgImage = async(file)=>{
     if(!file||!file.type.startsWith("image/")) return;
-    const b64 = await fileToB64(file);
+    const b64 = await fileToB64Bg(file);
     setNewBgImage(b64);
   };
 
   const handleBibleImages = async(files)=>{
     const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,20);
-    const conv = await Promise.all(arr.map(fileToB64));
+    const conv = await Promise.all(arr.map(fileToB64Bible));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
 
