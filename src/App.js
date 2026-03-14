@@ -922,7 +922,19 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
                       {/* Main image */}
                       <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)"}}>
-                        <img src={imgs[carouselIdx]} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",mixBlendMode:(()=>{try{const bm=JSON.parse(entry.blend_modes||selectedEntry?.blend_modes||"[]");return bm[carouselIdx]?"screen":"normal";}catch{return "normal";}})()}}/>
+                        {/* Background layer - shown when blend mode is active */}
+                        {(()=>{
+                          try{
+                            const bm=JSON.parse(selectedEntry?.blend_modes||"[]");
+                            const bgImg=selectedEntry?.bg_image;
+                            if(bm[carouselIdx]&&bgImg){
+                              return <img src={bgImg} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",zIndex:1}}/>;
+                            }
+                          }catch{}
+                          return null;
+                        })()}
+                        {/* Text/content image layer */}
+                        <img src={imgs[carouselIdx]} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",zIndex:2,mixBlendMode:(()=>{try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");return bm[carouselIdx]?"screen":"normal";}catch{return "normal";}})()}}/>
                         {/* Left arrow */}
                         {imgs.length>1&&carouselIdx>0&&(
                           <button onClick={()=>setCarouselIdx(i=>i-1)}
