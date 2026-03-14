@@ -981,12 +981,70 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.65,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
                       <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.muted,marginBottom:6}}>WEITERE BILDER HINZUFÜGEN (optional)</div>
                       <div className="dz" onClick={()=>bibleImageRef.current?.click()}
-                        style={{...gc,padding:"10px",textAlign:"center",marginBottom:10,borderStyle:"dashed",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
+                        style={{...gc,padding:"10px",textAlign:"center",marginBottom:8,borderStyle:"dashed",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
                         <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>+ Neue Bilder hinzufügen</div>
                         <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>Bestehende Bilder bleiben erhalten</div>
                       </div>
                       <input ref={bibleImageRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>await handleBibleImages(e.target.files)}/>
-                      {newImages.length>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.green,marginBottom:8}}>✓ {newImages.length} neue Bilder werden hinzugefügt</div>}
+                      {/* New images with blend toggle */}
+                      {newImages.length>0&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
+                          {newImages.map((img,i)=>(
+                            <div key={i} style={{...gc,overflow:"hidden",borderColor:"rgba(212,175,55,.18)"}}>
+                              <div style={{position:"relative"}}>
+                                <img src={img.dataUrl} alt="" style={{width:"100%",height:70,objectFit:"cover",display:"block"}}/>
+                                <button onClick={()=>setNewImages(prev=>prev.filter((_,j)=>j!==i))}
+                                  style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.85)",border:"none",color:"#ff7b7b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                                <div style={{position:"absolute",bottom:3,left:6,fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.7)",background:"rgba(0,0,0,.6)",padding:"2px 6px",borderRadius:8}}>Neues Bild {i+1}</div>
+                              </div>
+                              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 10px",background:"rgba(3,2,1,.6)"}}>
+                                <div>
+                                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:G.gold,letterSpacing:1}}>TEXT-BLEND MODUS</div>
+                                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>Schwarzer Hintergrund unsichtbar</div>
+                                </div>
+                                <div onClick={()=>setBlendModes(prev=>{const n=[...prev];n[i]=!n[i];return n;})}
+                                  style={{width:38,height:20,borderRadius:10,background:blendModes[i]?"rgba(212,175,55,.8)":"rgba(255,255,255,.1)",cursor:"pointer",position:"relative",transition:"all .25s",border:"1px solid rgba(212,175,55,.25)",flexShrink:0}}>
+                                  <div style={{position:"absolute",top:2,left:blendModes[i]?18:2,width:14,height:14,borderRadius:"50%",background:blendModes[i]?G.gold3:"rgba(212,175,55,.4)",transition:"all .25s"}}/>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Hintergrundbild im Edit */}
+                      <div style={{...gc,padding:"12px",marginBottom:10,borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.65)"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:useBgImage?10:0}}>
+                          <div>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:G.gold,marginBottom:2}}>🖼️ HINTERGRUNDBILD</div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted}}>{editingEntry?.bg_image?"Aktuell vorhanden":"Kein Hintergrundbild"}</div>
+                          </div>
+                          <div onClick={()=>setUseBgImage(s=>!s)}
+                            style={{width:38,height:20,borderRadius:10,background:useBgImage?"rgba(212,175,55,.8)":"rgba(255,255,255,.1)",cursor:"pointer",position:"relative",transition:"all .25s",border:"1px solid rgba(212,175,55,.25)",flexShrink:0}}>
+                            <div style={{position:"absolute",top:2,left:useBgImage?18:2,width:14,height:14,borderRadius:"50%",background:useBgImage?G.gold3:"rgba(212,175,55,.4)",transition:"all .25s"}}/>
+                          </div>
+                        </div>
+                        {useBgImage&&(
+                          <div>
+                            <div className="dz" onClick={()=>bibleBgRef.current?.click()}
+                              style={{...gc,padding:"10px",textAlign:"center",borderStyle:"dashed",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
+                              {newBgImage?(
+                                <div style={{position:"relative"}}>
+                                  <img src={newBgImage.dataUrl} alt="" style={{width:"100%",height:70,objectFit:"cover",borderRadius:8,display:"block",opacity:.7}}/>
+                                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:2}}>ÄNDERN</div>
+                                  <button onClick={e=>{e.stopPropagation();setNewBgImage(null);setUseBgImage(false);}}
+                                    style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,.8)",border:"none",color:"#ff7b7b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:10}}>✕</button>
+                                </div>
+                              ):(
+                                <>
+                                  <div style={{fontSize:16,opacity:.4,marginBottom:3}}>🌅</div>
+                                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Neues Hintergrundbild wählen</div>
+                                </>
+                              )}
+                            </div>
+                            <input ref={bibleBgRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleBgImage(e.target.files[0])}/>
+                          </div>
+                        )}
+                      </div>
                       <div style={{display:"flex",gap:8}}>
                         <MBtn onClick={saveEdit} disabled={savingPost}>
                           {savingPost?(saveStatus||"SPEICHERE…"):"💾  ÄNDERUNGEN SPEICHERN"}
