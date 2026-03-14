@@ -105,7 +105,7 @@ export default function App({ user, onLogout }) {
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newImages, setNewImages] = useState([]); // up to 12
+  const [newImages, setNewImages] = useState([]); // up to 20
   const [blendModes, setBlendModes] = useState([]); // per-image blend mode
   const [newBgImage, setNewBgImage] = useState(null);
   const [useBgImage, setUseBgImage] = useState(false);
@@ -175,9 +175,9 @@ export default function App({ user, onLogout }) {
   };
 
   const handleBibleImages = async(files)=>{
-    const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,12);
+    const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,20);
     const conv = await Promise.all(arr.map(fileToB64));
-    setNewImages(prev=>[...prev,...conv].slice(0,12));
+    setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
 
   const savePost = async()=>{
@@ -701,8 +701,8 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <div className="dz" onClick={()=>bibleImageRef.current?.click()}
                   style={{...gc,padding:"12px",textAlign:"center",marginBottom:8,borderStyle:"dashed",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.6)",cursor:"pointer"}}>
                   <div style={{fontSize:18,opacity:.4,marginBottom:3}}>🖼️</div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Bilder hinzufügen (bis zu 12)</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>{newImages.length}/12 ausgewählt</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Bilder hinzufügen (bis zu 20)</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>{newImages.length}/20 ausgewählt</div>
                 </div>
                 <input ref={bibleImageRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>handleBibleImages(e.target.files)}/>
                 {/* BG Image Option */}
@@ -761,7 +761,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         </div>
                       </div>
                     ))}
-                    {newImages.length<12&&(
+                    {newImages.length<20&&(
                       <div className="dz" onClick={()=>bibleImageRef.current?.click()}
                         style={{padding:"12px",textAlign:"center",border:"1px dashed rgba(212,175,55,.2)",borderRadius:10,color:"rgba(212,175,55,.35)",fontSize:13,background:"rgba(3,2,1,.5)",fontFamily:"'Cinzel',serif",letterSpacing:2}}>
                         + BILD HINZUFÜGEN
