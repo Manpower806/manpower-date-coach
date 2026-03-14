@@ -163,7 +163,7 @@ export default function App({ user, onLogout }) {
   const [newMusicEnd, setNewMusicEnd] = useState(0);
   const [previewingMusic, setPreviewingMusic] = useState(false);
   const audioRef = useRef(null);
-  const MUSIC_FILES = ["music1.mp3","music2.mp3","music3.mp3","music4.mp3","music5.mp3"];
+  const [musicFiles, setMusicFiles] = useState(()=>{ try{return JSON.parse(localStorage.getItem("mp_music_files")||"[]");}catch{return [];} });
   const touchStartX = useRef(null);
 
   useEffect(()=>{
@@ -931,7 +931,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
                   musicStart={newMusicStart} setMusicStart={setNewMusicStart}
                   musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
-                  MUSIC_FILES={MUSIC_FILES} G={G} gc={gc}
+                  MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin}
                 />
 
                 <div style={{display:"flex",gap:8}}>
@@ -1142,7 +1142,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
                         musicStart={newMusicStart} setMusicStart={setNewMusicStart}
                         musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
-                        MUSIC_FILES={MUSIC_FILES} G={G} gc={gc}
+                        MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin}
                       />
                       <div style={{display:"flex",gap:8}}>
                         <MBtn onClick={saveEdit} disabled={savingPost}>
@@ -1318,38 +1318,34 @@ function Spin({text}){return(
 function Err({children}){return <div style={{background:"rgba(224,92,106,.08)",border:"1px solid rgba(224,92,106,.22)",borderRadius:8,padding:"9px 12px",color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:12}}>{children}</div>;}
 
 // ── MUSIC PICKER COMPONENT ───────────────────────────────────────────────────
-function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,setMusicEnd,MUSIC_FILES,G,gc}){
+function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,setMusicEnd,MUSIC_FILES,setMusicFiles,G,gc,isAdmin}){
   const [preview, setPreview] = useState(null);
+  const [newFileName, setNewFileName] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
 
-  const fmtTime = (s)=>{
-    const m=Math.floor(s/60);
-    const sec=Math.floor(s%60);
-    return `${m}:${sec.toString().padStart(2,"0")}`;
-  };
+  const fmtTime=(s)=>{ const m=Math.floor(s/60),sec=Math.floor(s%60); return `${m}:${sec.toString().padStart(2,"0")}`; };
+  const parseSec=(str)=>{ if(!str) return 0; if(str.includes(":")){ const [m,s]=str.split(":"); return parseInt(m)*60+parseFloat(s||0); } return parseFloat(str)||0; };
 
-  const parseSec = (str)=>{
-    if(!str) return 0;
-    if(str.includes(":")){
-      const [m,s]=str.split(":");
-      return parseInt(m)*60+parseFloat(s||0);
-    }
-    return parseFloat(str)||0;
-  };
-
-  const startPreview = ()=>{
-    if(preview){ preview.pause(); setPreview(null); return; }
+  const startPreview=()=>{
+    if(preview){preview.pause();setPreview(null);return;}
     if(!musicUrl) return;
-    const a = new Audio("/"+musicUrl);
-    a.currentTime = musicStart||0;
-    a.volume = 0.7;
-    const end = musicEnd||0;
-    if(end>0){
-      a.ontimeupdate=()=>{ if(a.currentTime>=end){ a.pause(); setPreview(null); } };
-    }
+    const a=new Audio("/"+musicUrl);
+    a.currentTime=musicStart||0; a.volume=0.7;
+    const end=musicEnd||0;
+    if(end>0){ a.ontimeupdate=()=>{ if(a.currentTime>=end){a.pause();setPreview(null);} }; }
     a.onended=()=>setPreview(null);
     a.play().catch(()=>{});
     setPreview(a);
   };
+
+  const addFile=()=>{
+    if(!newFileName.trim()) return;
+    const entry={file:newFileName.trim(),name:newDisplayName.trim()||newFileName.trim()};
+    setMusicFiles([...MUSIC_FILES,entry]);
+    setNewFileName(""); setNewDisplayName("");
+  };
+
+  const removeFile=(i)=>{ setMusicFiles(MUSIC_FILES.filter((_,j)=>j!==i)); };
 
   return (
     <div style={{...gc,padding:"13px",marginBottom:14,borderColor:"rgba(212,175,55,.22)",background:"rgba(3,2,1,.7)"}}>
@@ -1358,49 +1354,67 @@ function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,set
         <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:G.gold}}>MUSIK FÜR DIESEN BEITRAG</span>
       </div>
 
-      {/* Song selector */}
+      {/* Admin: Add music files */}
+      {isAdmin&&(
+        <div style={{marginBottom:12,padding:"10px",background:"rgba(212,175,55,.05)",borderRadius:8,border:"1px solid rgba(212,175,55,.15)"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:7}}>👑 MUSIK HINZUFÜGEN</div>
+          <input value={newFileName} onChange={e=>setNewFileName(e.target.value)}
+            placeholder="Dateiname z.B. drake_gods_plan.mp3"
+            style={{...gc,width:"100%",padding:"7px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:5,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.15)"}}/>
+          <input value={newDisplayName} onChange={e=>setNewDisplayName(e.target.value)}
+            placeholder="Anzeigename z.B. Drake - God's Plan"
+            style={{...gc,width:"100%",padding:"7px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:7,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.15)"}}/>
+          <button onClick={addFile}
+            style={{width:"100%",background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:G.gold,padding:"7px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>
+            + HINZUFÜGEN
+          </button>
+        </div>
+      )}
+
+      {/* Song list */}
       <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:5}}>SONG WÄHLEN</div>
       <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>
         <div onClick={()=>setMusicUrl("")}
           style={{...gc,padding:"8px 11px",cursor:"pointer",background:!musicUrl?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",borderColor:!musicUrl?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
-          <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:!musicUrl?G.gold:G.muted}}>🔇 Kein Musik</span>
+          <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:!musicUrl?G.gold:G.muted}}>🔇 Keine Musik</span>
         </div>
-        {MUSIC_FILES.map(f=>(
-          <div key={f} onClick={()=>setMusicUrl(f)}
-            style={{...gc,padding:"8px 11px",cursor:"pointer",background:musicUrl===f?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",borderColor:musicUrl===f?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
-            <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:musicUrl===f?G.gold:G.muted}}>🎵 {f}</span>
-          </div>
-        ))}
+        {MUSIC_FILES.map((f,i)=>{
+          const file=typeof f==="object"?f.file:f;
+          const name=typeof f==="object"?f.name:f;
+          return(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+              <div onClick={()=>setMusicUrl(file)} style={{...gc,flex:1,padding:"8px 11px",cursor:"pointer",
+                background:musicUrl===file?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",
+                borderColor:musicUrl===file?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
+                <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:musicUrl===file?G.gold:G.muted}}>🎵 {name}</span>
+              </div>
+              {isAdmin&&<button onClick={()=>removeFile(i)}
+                style={{background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.25)",color:"#ff8a95",width:28,height:28,borderRadius:"50%",cursor:"pointer",fontSize:10,flexShrink:0}}>✕</button>}
+            </div>
+          );
+        })}
+        {MUSIC_FILES.length===0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:G.muted,padding:"8px",textAlign:"center"}}>Noch keine Musik hinzugefügt</div>}
       </div>
 
       {musicUrl&&(
         <>
-          {/* Start / End time */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
             <div>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:4}}>▶️ START (z.B. 0:30)</div>
-              <input
-                defaultValue={fmtTime(musicStart)}
-                onBlur={e=>setMusicStart(parseSec(e.target.value))}
-                placeholder="0:00"
+              <input defaultValue={fmtTime(musicStart)} onBlur={e=>setMusicStart(parseSec(e.target.value))} placeholder="0:00"
                 style={{...gc,width:"100%",padding:"8px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.18)"}}/>
             </div>
             <div>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:4}}>⏹️ ENDE (z.B. 0:45)</div>
-              <input
-                defaultValue={fmtTime(musicEnd)}
-                onBlur={e=>setMusicEnd(parseSec(e.target.value))}
-                placeholder="0:00"
+              <input defaultValue={fmtTime(musicEnd)} onBlur={e=>setMusicEnd(parseSec(e.target.value))} placeholder="0:00"
                 style={{...gc,width:"100%",padding:"8px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.18)"}}/>
             </div>
           </div>
           <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginBottom:10}}>
-            Abschnitt: {fmtTime(musicStart)} → {musicEnd>0?fmtTime(musicEnd):"Ende"} ({musicEnd>0?Math.round(musicEnd-musicStart):"∞"}s)
+            Abschnitt: {fmtTime(musicStart)} → {musicEnd>0?fmtTime(musicEnd):"Ende"} · {musicEnd>0?Math.round(musicEnd-musicStart)+"s":"ganzer Song"}
           </div>
-
-          {/* Preview button */}
           <button onClick={startPreview}
-            style={{width:"100%",background:preview?"rgba(224,92,106,.15)":"rgba(212,175,55,.1)",border:`1px solid ${preview?"rgba(224,92,106,.4)":"rgba(212,175,55,.25)"}`,color:preview?"#ff8a95":G.gold,padding:"9px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,transition:"all .2s"}}>
+            style={{width:"100%",background:preview?"rgba(224,92,106,.15)":"rgba(212,175,55,.1)",border:`1px solid ${preview?"rgba(224,92,106,.4)":"rgba(212,175,55,.25)"}`,color:preview?"#ff8a95":G.gold,padding:"9px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2}}>
             {preview?"⏹️  PREVIEW STOPPEN":"▶️  PREVIEW ANHÖREN"}
           </button>
         </>
