@@ -63,7 +63,7 @@ const gc = {
 
 export default function App({ user, onLogout }) {
   const isAdmin = user?.username?.toLowerCase() === ADMIN_USERNAME;
-  const [mainTab, setMainTab] = useState("coach"); // coach | bible
+  const [mainTab, setMainTab] = useState(null); // null=menu, coach, bible
   const [tab, setTab] = useState("opener");
   const [tone, setTone] = useState("charming");
   const [localMem, setLocalMem] = useState(loadLocal);
@@ -326,18 +326,46 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
         </header>
 
         {/* MAIN TAB SWITCHER */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-          {[["coach","🤖","KI DATE COACH"],["bible","📖","MANPOWER-BIBEL"]].map(([key,icon,label])=>(
-            <div key={key} className="maintab" onClick={()=>setMainTab(key)}
-              style={{...gc,padding:"14px 8px",textAlign:"center",cursor:"pointer",
-                background:mainTab===key?"rgba(212,175,55,.14)":"rgba(3,2,1,.72)",
-                borderColor:mainTab===key?"rgba(212,175,55,.55)":"rgba(212,175,55,.14)",
-                boxShadow:mainTab===key?"0 0 24px rgba(212,175,55,.2)":"none"}}>
-              <div style={{fontSize:22,marginBottom:4}}>{icon}</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:mainTab===key?G.gold:"rgba(212,175,55,.4)",fontWeight:mainTab===key?"700":"400"}}>{label}</div>
-            </div>
-          ))}
-        </div>
+        {!mainTab ? (
+          <div style={{display:"flex",flexDirection:"column",gap:14,marginTop:10,marginBottom:16}}>
+            {[["coach","🍑🫦","KI DATE COACH","Opener · Analyse · Community"],["bible","📖","MANPOWER-BIBEL","Wissen · Prinzipien · Lektionen"]].map(([key,icon,label,sub])=>(
+              <div key={key} className="maintab" onClick={()=>setMainTab(key)}
+                style={{...gc,padding:"30px 20px",textAlign:"center",cursor:"pointer",
+                  background:"rgba(3,2,1,.78)",borderColor:"rgba(212,175,55,.22)",
+                  position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,175,55,.07),transparent 70%)",pointerEvents:"none"}}/>
+                <div style={{fontSize:40,marginBottom:10}}>{icon}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:900,letterSpacing:3,
+                  background:"linear-gradient(90deg,#8B6914,#D4AF37,#F5E27A,#D4AF37,#8B6914)",
+                  backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+                  backgroundClip:"text",animation:"shimmer 4s linear infinite",marginBottom:7}}>{label}</div>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(212,175,55,.45)",letterSpacing:1,marginBottom:14}}>{sub}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.5)",
+                  border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"5px 16px",display:"inline-block"}}>
+                  BETRETEN →
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            <button onClick={()=>setMainTab(null)}
+              style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"8px 12px",
+                cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,
+                border:"1px solid rgba(212,175,55,.15)",borderRadius:10}}>← MENÜ</button>
+            {[["coach","🍑🫦","DATE COACH"],["bible","📖","BIBEL"]].map(([key,icon,label])=>(
+              <div key={key} className="maintab" onClick={()=>setMainTab(key)}
+                style={{...gc,flex:1,padding:"9px 6px",textAlign:"center",cursor:"pointer",
+                  background:mainTab===key?"rgba(212,175,55,.14)":"rgba(3,2,1,.72)",
+                  borderColor:mainTab===key?"rgba(212,175,55,.5)":"rgba(212,175,55,.12)",
+                  boxShadow:mainTab===key?"0 0 18px rgba(212,175,55,.18)":"none"}}>
+                <div style={{fontSize:16,marginBottom:2}}>{icon}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,
+                  color:mainTab===key?G.gold:"rgba(212,175,55,.35)"}}>{label}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ══════════════════════════════ */}
         {/* MAIN: KI DATE COACH           */}
