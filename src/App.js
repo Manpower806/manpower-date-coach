@@ -60,9 +60,35 @@ function fileToB64(file, maxWidth=1200, quality=0.72) {
   });
 }
 
-// Extra compression for bible images (more aggressive)
-function fileToB64Bible(file) { return fileToB64(file, 480, 0.40); }
-function fileToB64Bg(file) { return fileToB64(file, 600, 0.45); }
+// Upload file to Supabase Storage and return public URL
+async function uploadToStorage(supabaseClient, file, folder="images") {
+  const ext = file.type.includes("jpeg") ? "jpg" : "png";
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  // Compress first
+  const compressed = await new Promise(res=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const c = document.createElement("canvas");
+        let w=img.width, h=img.height;
+        const maxW = 1080;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        c.toBlob(blob=>res(blob), "image/jpeg", 0.75);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  const { data, error } = await supabaseClient.storage
+    .from("bible-images")
+    .upload(fileName, compressed, { contentType:"image/jpeg", upsert:false });
+  if(error) throw new Error(error.message);
+  const { data: urlData } = supabaseClient.storage.from("bible-images").getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
 
 const G = {
   gold:"#D4AF37", gold2:"#8B6914", gold3:"#F5E27A",
@@ -188,14 +214,19 @@ export default function App({ user, onLogout }) {
   // Bible functions
   const handleBgImage = async(file)=>{
     if(!file||!file.type.startsWith("image/")) return;
-    const b64 = await fileToB64Bg(file);
-    setNewBgImage(b64);
+    const reader = new FileReader();
+    reader.onload = e => setNewBgImage({dataUrl: e.target.result, file});
+    reader.readAsDataURL(file);
   };
 
   const handleBibleImages = async(files)=>{
     const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,20);
-    if(arr.length>8) alert("Tipp: Für beste Performance auf dem Handy maximal 8 Bilder auf einmal wählen.");
-    const conv = await Promise.all(arr.map(fileToB64Bible));
+    // Create preview URLs for display + keep file for upload
+    const conv = await Promise.all(arr.map(file=>new Promise(res=>{
+      const reader=new FileReader();
+      reader.onload=e=>res({dataUrl:e.target.result, file});
+      reader.readAsDataURL(file);
+    })));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
 
@@ -203,38 +234,31 @@ export default function App({ user, onLogout }) {
     if(!newTitle.trim()||!newContent.trim()) return;
     setSavingPost(true);
     try {
-      // Extra compress images before saving
-      const compressDataUrl = (dataUrl, maxW=480, q=0.35) => new Promise(res=>{
-        const img=new Image();
-        img.onload=()=>{
-          const c=document.createElement("canvas");
-          let w=img.width,h=img.height;
-          if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
-          c.width=w;c.height=h;
-          c.getContext("2d").drawImage(img,0,0,w,h);
-          res(c.toDataURL("image/jpeg",q));
-        };
-        img.src=dataUrl;
-      });
-
-      setSaveStatus("KOMPRIMIERE BILDER…");
-      const compressedImgs = await Promise.all(newImages.map(img=>compressDataUrl(img.dataUrl)));
-      const compressedBg = useBgImage&&newBgImage ? await compressDataUrl(newBgImage.dataUrl,800,0.5) : null;
+      const imageUrls = [];
+      for(let i=0; i<newImages.length; i++){
+        setSaveStatus(`BILD ${i+1}/${newImages.length}…`);
+        const url = await uploadToStorage(supabase, newImages[i].file);
+        imageUrls.push(url);
+      }
+      let bgUrl = null;
+      if(useBgImage && newBgImage?.file){
+        setSaveStatus("HINTERGRUNDBILD…");
+        bgUrl = await uploadToStorage(supabase, newBgImage.file, "backgrounds");
+      }
       setSaveStatus("SPEICHERE…");
-
       const {error} = await supabase.from("library").insert({
         title: newTitle.trim(),
         content: newContent.trim(),
-        image_url: compressedImgs.length>0 ? JSON.stringify(compressedImgs) : null,
-        bg_image: compressedBg || null,
+        image_url: imageUrls.length>0 ? JSON.stringify(imageUrls) : null,
+        bg_image: bgUrl,
         blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
         created_by: user.username,
       });
-      if(error) { alert("Fehler beim Speichern: "+error.message); setSavingPost(false); return; }
+      if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
       setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
       await loadBible();
-    } catch(e) {
-      alert("Fehler: "+e.message);
+    } catch(e){
+      alert("Upload Fehler: "+e.message);
     }
     setSavingPost(false);
     setSaveStatus("");
