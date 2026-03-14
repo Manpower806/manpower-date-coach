@@ -305,11 +305,24 @@ export default function App({ user, onLogout }) {
     if(entry.music_url){
       if(audioRef.current){ audioRef.current.pause(); audioRef.current=null; }
       const audio = new Audio("/"+entry.music_url);
-      audio.currentTime = entry.music_start||0;
-      audio.volume = 0.7;
+      const start = entry.music_start||0;
       const end = entry.music_end||0;
+      audio.currentTime = start;
+      audio.volume = 0.7;
       if(end>0){
-        audio.ontimeupdate = ()=>{ if(audio.currentTime>=end){ audio.pause(); audio.currentTime=entry.music_start||0; audio.play(); } };
+        // Loop between start and end
+        audio.ontimeupdate = ()=>{
+          if(audio.currentTime>=end){
+            audio.currentTime=start;
+            audio.play().catch(()=>{});
+          }
+        };
+      } else {
+        // Loop whole song from start
+        audio.onended = ()=>{
+          audio.currentTime=start;
+          audio.play().catch(()=>{});
+        };
       }
       audio.play().catch(()=>{});
       audioRef.current = audio;
@@ -501,7 +514,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
       <div style={{position:"relative",zIndex:3,maxWidth:480,margin:"0 auto",padding:"0 12px 80px"}}>
 
         {/* HEADER */}
-        <header style={{textAlign:"center",padding:"20px 0 16px",marginBottom:14,position:"relative"}}>
+        <header style={{textAlign:"center",padding:"24px 0 20px",marginBottom:20,position:"relative"}}>
           <div style={{position:"absolute",bottom:0,left:"5%",right:"5%",height:1,background:"linear-gradient(90deg,transparent,rgba(212,175,55,.3),rgba(212,175,55,.3),transparent)"}}/>
           <div style={{width:54,height:54,margin:"0 auto 8px",position:"relative"}}>
             <div style={{width:"100%",height:"100%",border:"2px solid",borderColor:G.gold,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(3,2,1,0.7)",backdropFilter:"blur(10px)",animation:"glow 4s ease infinite"}}>
@@ -510,7 +523,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <div style={{position:"absolute",top:-2,right:-1,width:9,height:9,background:G.rose,borderRadius:"50%",border:"2px solid rgba(3,2,1,.9)",animation:"heartbeat 2s ease infinite"}}/>
           </div>
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:10}}>BRUDERSCHAFT</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:14}}>BRUDERSCHAFT</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
             <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px"}}>
               <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"}</span>
@@ -545,7 +558,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             ))}
           </div>
         ) : (
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
             <button onClick={()=>setMainTab(null)}
               style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.45)",padding:"8px 14px",
                 cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,
@@ -859,7 +872,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           <div style={{animation:"fadeUp .3s ease"}}>
 
             {/* Header */}
-            <div style={{textAlign:"center",marginBottom:16}}>
+            <div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:G.gold,letterSpacing:3,marginBottom:4}}>📖 MANPOWER-BIBEL</div>
               <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:G.muted,lineHeight:1.6}}>Wissen · Prinzipien · Lektionen der Bruderschaft</div>
               <div style={{height:1,background:`linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)`,marginTop:10}}/>
