@@ -348,22 +348,17 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             ))}
           </div>
         ) : (
-          <div style={{display:"flex",gap:6,marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
             <button onClick={()=>setMainTab(null)}
-              style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"8px 12px",
-                cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,
-                border:"1px solid rgba(212,175,55,.15)",borderRadius:10}}>← MENÜ</button>
-            {[["coach","🍑🫦","DATE COACH"],["bible","📖","BIBEL"]].map(([key,icon,label])=>(
-              <div key={key} className="maintab" onClick={()=>setMainTab(key)}
-                style={{...gc,flex:1,padding:"9px 6px",textAlign:"center",cursor:"pointer",
-                  background:mainTab===key?"rgba(212,175,55,.14)":"rgba(3,2,1,.72)",
-                  borderColor:mainTab===key?"rgba(212,175,55,.5)":"rgba(212,175,55,.12)",
-                  boxShadow:mainTab===key?"0 0 18px rgba(212,175,55,.18)":"none"}}>
-                <div style={{fontSize:16,marginBottom:2}}>{icon}</div>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,
-                  color:mainTab===key?G.gold:"rgba(212,175,55,.35)"}}>{label}</div>
+              style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.45)",padding:"8px 14px",
+                cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,
+                border:"1px solid rgba(212,175,55,.18)",borderRadius:10,whiteSpace:"nowrap"}}>← MENÜ</button>
+            <div style={{...gc,flex:1,padding:"9px 12px",textAlign:"center",
+              background:"rgba(212,175,55,.1)",borderColor:"rgba(212,175,55,.4)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:700,letterSpacing:2,color:"#D4AF37"}}>
+                {mainTab==="coach"?"🍑🫦  KI DATE COACH":"📖  MANPOWER-BIBEL"}
               </div>
-            ))}
+            </div>
           </div>
         )}
 
