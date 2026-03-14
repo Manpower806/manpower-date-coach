@@ -127,6 +127,7 @@ export default function App({ user, onLogout }) {
   const [newBgImage, setNewBgImage] = useState(null);
   const [useBgImage, setUseBgImage] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const bibleImageRef = useRef();
   const bibleBgRef = useRef();
@@ -200,17 +201,42 @@ export default function App({ user, onLogout }) {
   const savePost = async()=>{
     if(!newTitle.trim()||!newContent.trim()) return;
     setSavingPost(true);
-    await supabase.from("library").insert({
-      title: newTitle.trim(),
-      content: newContent.trim(),
-      image_url: newImages.length>0 ? JSON.stringify(newImages.map(i=>i.dataUrl)) : null,
-      bg_image: useBgImage && newBgImage ? newBgImage.dataUrl : null,
-      blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
-      created_by: user.username,
-    });
-    setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
-    await loadBible();
+    try {
+      // Extra compress images before saving
+      const compressDataUrl = (dataUrl, maxW=600, q=0.45) => new Promise(res=>{
+        const img=new Image();
+        img.onload=()=>{
+          const c=document.createElement("canvas");
+          let w=img.width,h=img.height;
+          if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+          c.width=w;c.height=h;
+          c.getContext("2d").drawImage(img,0,0,w,h);
+          res(c.toDataURL("image/jpeg",q));
+        };
+        img.src=dataUrl;
+      });
+
+      setSaveStatus("KOMPRIMIERE BILDER…");
+      const compressedImgs = await Promise.all(newImages.map(img=>compressDataUrl(img.dataUrl)));
+      const compressedBg = useBgImage&&newBgImage ? await compressDataUrl(newBgImage.dataUrl,800,0.5) : null;
+      setSaveStatus("SPEICHERE…");
+
+      const {error} = await supabase.from("library").insert({
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        image_url: compressedImgs.length>0 ? JSON.stringify(compressedImgs) : null,
+        bg_image: compressedBg || null,
+        blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
+        created_by: user.username,
+      });
+      if(error) { alert("Fehler beim Speichern: "+error.message); setSavingPost(false); return; }
+      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
+      await loadBible();
+    } catch(e) {
+      alert("Fehler: "+e.message);
+    }
     setSavingPost(false);
+    setSaveStatus("");
   };
 
   const openEntry = (entry)=>{ setSelectedEntry(entry); setCarouselIdx(0); };
@@ -791,7 +817,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   rows={6} style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.7,marginBottom:14,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
                 <div style={{display:"flex",gap:8}}>
                   <MBtn onClick={savePost} disabled={savingPost||!newTitle.trim()||!newContent.trim()}>
-                    {savingPost?"SPEICHERE…":"💾  SPEICHERN"}
+                    {savingPost?(saveStatus||"KOMPRIMIERE…"):"💾  SPEICHERN"}
                   </MBtn>
                   <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
                     style={{...gc,flex:"0 0 auto",background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"12px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,borderRadius:10,border:"1px solid rgba(212,175,55,.15)"}}>
