@@ -150,6 +150,7 @@ export default function App({ user, onLogout }) {
   const [savingPost, setSavingPost] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [editingEntry, setEditingEntry] = useState(null);
   const bibleImageRef = useRef();
   const bibleBgRef = useRef();
   const [carouselIdx, setCarouselIdx] = useState(0);
@@ -258,7 +259,62 @@ export default function App({ user, onLogout }) {
     setSaveStatus("");
   };
 
-  const openEntry = (entry)=>{ setSelectedEntry(entry); setCarouselIdx(0); };
+  const openEntry = (entry)=>{ setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null); };
+
+  const startEdit = (entry)=>{
+    setEditingEntry(entry);
+    setNewTitle(entry.title||"");
+    setNewContent(entry.content||"");
+    setNewImages([]); // Can't restore old images to file objects, user re-uploads if needed
+    setBlendModes(entry.blend_modes?JSON.parse(entry.blend_modes):[]);
+    setUseBgImage(!!entry.bg_image);
+    setNewBgImage(entry.bg_image?{dataUrl:entry.bg_image}:null);
+  };
+
+  const saveEdit = async()=>{
+    if(!editingEntry) return;
+    setSavingPost(true);
+    try {
+      const imageUrls = [];
+      // Upload any new images added during edit
+      for(let i=0; i<newImages.length; i++){
+        setSaveStatus(`BILD ${i+1} VON ${newImages.length}…`);
+        const url = await uploadDataUrlToStorage(supabase, newImages[i].dataUrl, "images");
+        imageUrls.push(url);
+      }
+      // Keep existing images if no new ones added
+      let finalImageUrl = editingEntry.image_url;
+      if(imageUrls.length>0){
+        // Merge with existing
+        let existing = [];
+        try{ existing = JSON.parse(editingEntry.image_url||"[]"); }catch{}
+        finalImageUrl = JSON.stringify([...existing, ...imageUrls]);
+      }
+      let bgUrl = editingEntry.bg_image;
+      if(useBgImage && newBgImage?.dataUrl && newBgImage.dataUrl !== editingEntry.bg_image){
+        setSaveStatus("HINTERGRUNDBILD…");
+        bgUrl = await uploadDataUrlToStorage(supabase, newBgImage.dataUrl, "backgrounds");
+      }
+      if(!useBgImage) bgUrl = null;
+      setSaveStatus("SPEICHERE…");
+      const {error} = await supabase.from("library").update({
+        title: newTitle.trim()||editingEntry.title,
+        content: newContent.trim(),
+        image_url: finalImageUrl,
+        bg_image: bgUrl,
+        blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
+      }).eq("id", editingEntry.id);
+      if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
+      await loadBible();
+      // Refresh selected entry
+      const {data} = await supabase.from("library").select("*").eq("id",editingEntry.id).single();
+      if(data){ setSelectedEntry(data); setCarouselIdx(0); }
+      setEditingEntry(null);
+      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false);
+    } catch(e){ alert("Fehler: "+e.message); }
+    setSavingPost(false);
+    setSaveStatus("");
+  };
 
   const deletePost = async(id)=>{
     setDeletingId(id);
@@ -902,11 +958,45 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted,marginTop:12}}>
                     {new Date(selectedEntry.created_at).toLocaleDateString("de-DE")}
                   </div>
-                  {isAdmin&&(
-                    <button onClick={()=>deletePost(selectedEntry.id)} disabled={deletingId===selectedEntry.id}
-                      style={{marginTop:12,background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.3)",color:"#ff8a95",padding:"7px 16px",cursor:"pointer",borderRadius:18,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>
-                      {deletingId===selectedEntry.id?"LÖSCHE…":"🗑️ LÖSCHEN"}
-                    </button>
+                  {isAdmin&&!editingEntry&&(
+                    <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+                      <button onClick={()=>startEdit(selectedEntry)}
+                        style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.3)",color:G.gold,padding:"7px 16px",cursor:"pointer",borderRadius:18,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>
+                        ✏️ BEARBEITEN
+                      </button>
+                      <button onClick={()=>deletePost(selectedEntry.id)} disabled={deletingId===selectedEntry.id}
+                        style={{background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.3)",color:"#ff8a95",padding:"7px 16px",cursor:"pointer",borderRadius:18,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>
+                        {deletingId===selectedEntry.id?"LÖSCHE…":"🗑️ LÖSCHEN"}
+                      </button>
+                    </div>
+                  )}
+                  {isAdmin&&editingEntry&&(
+                    <div style={{marginTop:14}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:G.gold,marginBottom:10}}>✏️ BEITRAG BEARBEITEN</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.muted,marginBottom:6}}>TITEL</div>
+                      <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
+                        style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.muted,marginBottom:6}}>INHALT</div>
+                      <textarea value={newContent} onChange={e=>setNewContent(e.target.value)} rows={5}
+                        style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.65,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.muted,marginBottom:6}}>WEITERE BILDER HINZUFÜGEN (optional)</div>
+                      <div className="dz" onClick={()=>bibleImageRef.current?.click()}
+                        style={{...gc,padding:"10px",textAlign:"center",marginBottom:10,borderStyle:"dashed",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>+ Neue Bilder hinzufügen</div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>Bestehende Bilder bleiben erhalten</div>
+                      </div>
+                      <input ref={bibleImageRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>await handleBibleImages(e.target.files)}/>
+                      {newImages.length>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.green,marginBottom:8}}>✓ {newImages.length} neue Bilder werden hinzugefügt</div>}
+                      <div style={{display:"flex",gap:8}}>
+                        <MBtn onClick={saveEdit} disabled={savingPost}>
+                          {savingPost?(saveStatus||"SPEICHERE…"):"💾  ÄNDERUNGEN SPEICHERN"}
+                        </MBtn>
+                        <button onClick={()=>{setEditingEntry(null);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
+                          style={{...gc,flex:"0 0 auto",background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"12px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,borderRadius:10,border:"1px solid rgba(212,175,55,.15)"}}>
+                          ABBRECHEN
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
                 </div>{/* end relative z-1 */}
