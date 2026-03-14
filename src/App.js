@@ -458,7 +458,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"} {user?.username?.toUpperCase()}</span>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
-            <button className="mgbtn" onClick={onLogout} style={{background:"linear-gradient(135deg,#3d2800,#7a5500,#D4AF37,#F5E27A,#D4AF37,#7a5500,#3d2800)",backgroundSize:"250% auto",border:"none",borderRadius:16,padding:"7px 16px",color:"#1a0d00",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:8,letterSpacing:3,cursor:"pointer",animation:"shimmer 3s linear infinite",boxShadow:"0 3px 14px rgba(212,175,55,.35)",textShadow:"0 1px 2px rgba(0,0,0,.4)"}}>🚪 LOGOUT</button>
+            <button className="mgbtn" onClick={onLogout} style={{background:"linear-gradient(135deg,#3d2800,#7a5500,#D4AF37,#F5E27A,#D4AF37,#7a5500,#3d2800)",backgroundSize:"250% auto",border:"none",borderRadius:14,padding:"5px 12px",color:"#1a0d00",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:7,letterSpacing:2,cursor:"pointer",animation:"shimmer 3s linear infinite",boxShadow:"0 2px 10px rgba(212,175,55,.3)",textShadow:"0 1px 2px rgba(0,0,0,.4)"}}>🚪 LOGOUT</button>
           </div>
         </header>
 
@@ -926,7 +926,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
                       {/* Main image */}
                       <div
-                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)"}}
+                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)",cursor:"pointer"}}
                         onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; }}
                         onTouchEnd={e=>{
                           if(touchStartX.current===null) return;
@@ -934,8 +934,16 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           if(Math.abs(diff)>40){
                             if(diff>0 && carouselIdx<imgs.length-1) setCarouselIdx(i=>i+1);
                             if(diff<0 && carouselIdx>0) setCarouselIdx(i=>i-1);
+                          } else {
+                            setModalIdx(carouselIdx);
+                            setModalOpen(true);
                           }
                           touchStartX.current=null;
+                        }}
+                        onClick={e=>{
+                          if(e.target.tagName==="BUTTON") return;
+                          setModalIdx(carouselIdx);
+                          setModalOpen(true);
                         }}
                       >
                         {/* Background layer - shown when blend mode is active */}
