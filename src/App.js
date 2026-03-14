@@ -67,8 +67,8 @@ export default function App({ user, onLogout }) {
   const [tab,          setTab]          = useState("opener");
   const [tone,         setTone]         = useState("charming");
   const [localMem,     setLocalMem]     = useState(loadLocal);
-  const [apiKey,       setApiKey]       = useState(()=>localStorage.getItem("mp_api_key")||"");
-  const [showKey,      setShowKey]      = useState(false);
+  const apiKey = process.env.REACT_APP_ANTHROPIC_KEY || "";
+  
   const [profileImgs,  setProfileImgs]  = useState([]);
   const [profileNote,  setProfileNote]  = useState("");
   const [openerLang,   setOpenerLang]   = useState("auto");
@@ -93,7 +93,7 @@ export default function App({ user, onLogout }) {
   const [myHistory,    setMyHistory]    = useState([]);
   const [loadingHist,  setLoadingHist]  = useState(false);
 
-  const saveKey = k=>{setApiKey(k);localStorage.setItem("mp_api_key",k);};
+  
 
   useEffect(()=>{
     if(tab==="community") loadComm();
@@ -280,21 +280,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           </div>
         </header>
 
-        {/* ADMIN API KEY */}
-        {isAdmin&&(
-          <div style={{...glassCard,padding:"13px 16px",marginBottom:18,borderColor:"rgba(212,175,55,.28)",background:"rgba(3,2,1,.78)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <span style={{fontSize:12}}>👑</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.55)"}}>ADMIN · ANTHROPIC API KEY</span>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <input type={showKey?"text":"password"} placeholder="sk-ant-..." value={apiKey} onChange={e=>saveKey(e.target.value)}
-                style={{flex:1,background:"rgba(0,0,0,.55)",border:"1px solid rgba(212,175,55,.18)",borderRadius:8,padding:"9px 13px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13}}/>
-              <button onClick={()=>setShowKey(s=>!s)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:G.gold,padding:"9px 14px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,transition:"all .2s"}}>{showKey?"HIDE":"SHOW"}</button>
-            </div>
-            <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.28)",marginTop:6}}>Nur für Admins sichtbar · console.anthropic.com → API Keys</div>
-          </div>
-        )}
+
 
         {/* TONE SELECTOR */}
         <div style={{...glassCard,padding:"10px",marginBottom:18,background:"rgba(3,2,1,.7)"}}>
