@@ -225,7 +225,7 @@ export default function App({ user, onLogout }) {
   };
 
   const savePost = async()=>{
-    if(!newTitle.trim()||!newContent.trim()) return;
+    if(!newTitle.trim()&&!newContent.trim()&&newImages.length===0) return;
     setSavingPost(true);
     try {
       const imageUrls = [];
@@ -757,7 +757,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               <div style={{...gc,padding:"16px",marginBottom:16,background:"rgba(3,2,1,.82)",borderColor:"rgba(212,175,55,.28)"}}>
                 <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:G.gold,marginBottom:12}}>✍️ NEUER BEITRAG</div>
                 <SL>TITEL</SL>
-                <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Titel des Beitrags..."
+                <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Titel (optional)..."
                   style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
                 <SL>BILD HINZUFÜGEN (optional)</SL>
                 <div className="dz" onClick={()=>bibleImageRef.current?.click()}
@@ -832,10 +832,10 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   </div>
                 )}
                 <SL>INHALT</SL>
-                <textarea value={newContent} onChange={e=>setNewContent(e.target.value)} placeholder="Schreibe deinen Beitrag..."
+                <textarea value={newContent} onChange={e=>setNewContent(e.target.value)} placeholder="Inhalt (optional)..."
                   rows={6} style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.7,marginBottom:14,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
                 <div style={{display:"flex",gap:8}}>
-                  <MBtn onClick={savePost} disabled={savingPost||!newTitle.trim()||!newContent.trim()}>
+                  <MBtn onClick={savePost} disabled={savingPost}>
                     {savingPost?(saveStatus||"KOMPRIMIERE…"):"💾  SPEICHERN"}
                   </MBtn>
                   <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
