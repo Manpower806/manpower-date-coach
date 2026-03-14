@@ -957,8 +957,12 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           }catch{}
                           return null;
                         })()}
-                        {/* Dark overlay for better text contrast */}
-                        {(()=>{ let b=false; try{b=!!JSON.parse(selectedEntry?.blend_modes||"[]")[carouselIdx];}catch{} return b?<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.28)",zIndex:3,pointerEvents:"none"}}/>:null; })()}
+                        {/* Gradient overlay for text readability */}
+                        {(()=>{ let b=false; try{b=!!JSON.parse(selectedEntry?.blend_modes||"[]")[carouselIdx];}catch{} return b?(
+                          <div style={{position:"absolute",inset:0,zIndex:3,pointerEvents:"none",
+                            background:"linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.52) 28%,rgba(0,0,0,.2) 52%,rgba(0,0,0,.04) 72%,transparent 100%)"
+                          }}/>
+                        ):null; })()}
                         {/* Text image layer */}
                         {(()=>{
                           let blendActive=false;
@@ -1190,12 +1194,18 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               {blendActive(modalIdx)&&bgImg&&(
                 <img src={bgImg} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",zIndex:1}}/>
               )}
+              {/* Gradient for text readability */}
+              {blendActive(modalIdx)&&(
+                <div style={{position:"absolute",inset:0,zIndex:3,pointerEvents:"none",
+                  background:"linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.55) 28%,rgba(0,0,0,.22) 52%,rgba(0,0,0,.05) 72%,transparent 100%)"
+                }}/>
+              )}
               <img src={imgs[modalIdx]} alt="" style={{
                 position:"absolute",inset:0,width:"100%",height:"100%",
-                objectFit:"contain",objectPosition:"center",zIndex:2,
+                objectFit:"contain",objectPosition:"center",zIndex:4,
                 mixBlendMode:blendActive(modalIdx)?"screen":"normal",
                 filter:blendActive(modalIdx)
-                  ?"brightness(1.4) contrast(1.3) drop-shadow(0px 0px 3px #000) drop-shadow(0px 0px 8px #000) drop-shadow(2px 2px 0px #000) drop-shadow(-2px -2px 0px #000) drop-shadow(2px -2px 0px #000) drop-shadow(-2px 2px 0px #000)"
+                  ?"brightness(1.65) contrast(1.5) drop-shadow(0px 0px 4px #000) drop-shadow(0px 0px 10px #000) drop-shadow(3px 3px 0px #000) drop-shadow(-3px -3px 0px #000) drop-shadow(3px -3px 0px #000) drop-shadow(-3px 3px 0px #000)"
                   :"none"
               }}/>
               {/* Arrows */}
