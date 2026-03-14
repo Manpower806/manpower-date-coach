@@ -157,6 +157,13 @@ export default function App({ user, onLogout }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIdx, setModalIdx] = useState(0);
   const modalTouchX = useRef(null);
+  // Music
+  const [newMusicUrl, setNewMusicUrl] = useState("");
+  const [newMusicStart, setNewMusicStart] = useState(0);
+  const [newMusicEnd, setNewMusicEnd] = useState(0);
+  const [previewingMusic, setPreviewingMusic] = useState(false);
+  const audioRef = useRef(null);
+  const MUSIC_FILES = ["music1.mp3","music2.mp3","music3.mp3","music4.mp3","music5.mp3"];
   const touchStartX = useRef(null);
 
   useEffect(()=>{
@@ -251,10 +258,13 @@ export default function App({ user, onLogout }) {
         image_url: imageUrls.length>0 ? JSON.stringify(imageUrls) : null,
         bg_image: bgUrl || null,
         blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
+        music_url: newMusicUrl || null,
+        music_start: newMusicStart || 0,
+        music_end: newMusicEnd || 0,
         created_by: user.username,
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
-      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
+      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false);
       await loadBible();
     } catch(e){
       alert("Fehler beim Speichern: "+e.message);
@@ -263,7 +273,22 @@ export default function App({ user, onLogout }) {
     setSaveStatus("");
   };
 
-  const openEntry = (entry)=>{ setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null); };
+  const openEntry = (entry)=>{ 
+    setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null);
+    // Start music if entry has one
+    if(entry.music_url){
+      if(audioRef.current){ audioRef.current.pause(); audioRef.current=null; }
+      const audio = new Audio("/"+entry.music_url);
+      audio.currentTime = entry.music_start||0;
+      audio.volume = 0.7;
+      const end = entry.music_end||0;
+      if(end>0){
+        audio.ontimeupdate = ()=>{ if(audio.currentTime>=end){ audio.pause(); audio.currentTime=entry.music_start||0; audio.play(); } };
+      }
+      audio.play().catch(()=>{});
+      audioRef.current = audio;
+    }
+  };
 
   const startEdit = (entry)=>{
     setEditingEntry(entry);
@@ -273,6 +298,9 @@ export default function App({ user, onLogout }) {
     setBlendModes(entry.blend_modes?JSON.parse(entry.blend_modes):[]);
     setUseBgImage(!!entry.bg_image);
     setNewBgImage(entry.bg_image?{dataUrl:entry.bg_image}:null);
+    setNewMusicUrl(entry.music_url||"");
+    setNewMusicStart(entry.music_start||0);
+    setNewMusicEnd(entry.music_end||0);
   };
 
   const saveEdit = async()=>{
@@ -307,6 +335,9 @@ export default function App({ user, onLogout }) {
         image_url: finalImageUrl,
         bg_image: bgUrl,
         blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
+        music_url: newMusicUrl || null,
+        music_start: newMusicStart || 0,
+        music_end: newMusicEnd || 0,
       }).eq("id", editingEntry.id);
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
       await loadBible();
@@ -894,11 +925,20 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <SL>INHALT</SL>
                 <textarea value={newContent} onChange={e=>setNewContent(e.target.value)} placeholder="Inhalt (optional)..."
                   rows={6} style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none",lineHeight:1.7,marginBottom:14,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
+
+                {/* MUSIK */}
+                <MusicPicker
+                  musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
+                  musicStart={newMusicStart} setMusicStart={setNewMusicStart}
+                  musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
+                  MUSIC_FILES={MUSIC_FILES} G={G} gc={gc}
+                />
+
                 <div style={{display:"flex",gap:8}}>
                   <MBtn onClick={savePost} disabled={savingPost}>
-                    {savingPost?(saveStatus||"KOMPRIMIERE…"):"💾  SPEICHERN"}
+                    {savingPost?(saveStatus||"SPEICHERE…"):"💾  SPEICHERN"}
                   </MBtn>
-                  <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
+                  <button onClick={()=>{setShowNewPost(false);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);setNewMusicUrl("");setNewMusicStart(0);setNewMusicEnd(0);}}
                     style={{...gc,flex:"0 0 auto",background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"12px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,borderRadius:10,border:"1px solid rgba(212,175,55,.15)"}}>
                     ABBRECHEN
                   </button>
@@ -914,7 +954,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   <div style={{position:"fixed",inset:0,zIndex:0,backgroundImage:`url(${selectedEntry.bg_image})`,backgroundSize:"cover",backgroundPosition:"center",opacity:.18,pointerEvents:"none"}}/>
                 )}
                 <div style={{position:"relative",zIndex:1}}>
-                <button onClick={()=>setSelectedEntry(null)}
+                <button onClick={()=>{ setSelectedEntry(null); if(audioRef.current){audioRef.current.pause();audioRef.current=null;} }}
                   style={{...gc,background:"rgba(3,2,1,.7)",color:G.gold,padding:"8px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,borderRadius:18,border:`1px solid rgba(212,175,55,.2)`,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>
                   ← ZURÜCK
                 </button>
@@ -1098,11 +1138,17 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           </div>
                         )}
                       </div>
+                      <MusicPicker
+                        musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
+                        musicStart={newMusicStart} setMusicStart={setNewMusicStart}
+                        musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
+                        MUSIC_FILES={MUSIC_FILES} G={G} gc={gc}
+                      />
                       <div style={{display:"flex",gap:8}}>
                         <MBtn onClick={saveEdit} disabled={savingPost}>
                           {savingPost?(saveStatus||"SPEICHERE…"):"💾  ÄNDERUNGEN SPEICHERN"}
                         </MBtn>
-                        <button onClick={()=>{setEditingEntry(null);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);}}
+                        <button onClick={()=>{setEditingEntry(null);setNewTitle("");setNewContent("");setNewImages([]);setBlendModes([]);setNewBgImage(null);setUseBgImage(false);setNewMusicUrl("");setNewMusicStart(0);setNewMusicEnd(0);}}
                           style={{...gc,flex:"0 0 auto",background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"12px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,borderRadius:10,border:"1px solid rgba(212,175,55,.15)"}}>
                           ABBRECHEN
                         </button>
@@ -1270,3 +1316,95 @@ function Spin({text}){return(
   </div>
 );}
 function Err({children}){return <div style={{background:"rgba(224,92,106,.08)",border:"1px solid rgba(224,92,106,.22)",borderRadius:8,padding:"9px 12px",color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:12}}>{children}</div>;}
+
+// ── MUSIC PICKER COMPONENT ───────────────────────────────────────────────────
+function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,setMusicEnd,MUSIC_FILES,G,gc}){
+  const [preview, setPreview] = useState(null);
+
+  const fmtTime = (s)=>{
+    const m=Math.floor(s/60);
+    const sec=Math.floor(s%60);
+    return `${m}:${sec.toString().padStart(2,"0")}`;
+  };
+
+  const parseSec = (str)=>{
+    if(!str) return 0;
+    if(str.includes(":")){
+      const [m,s]=str.split(":");
+      return parseInt(m)*60+parseFloat(s||0);
+    }
+    return parseFloat(str)||0;
+  };
+
+  const startPreview = ()=>{
+    if(preview){ preview.pause(); setPreview(null); return; }
+    if(!musicUrl) return;
+    const a = new Audio("/"+musicUrl);
+    a.currentTime = musicStart||0;
+    a.volume = 0.7;
+    const end = musicEnd||0;
+    if(end>0){
+      a.ontimeupdate=()=>{ if(a.currentTime>=end){ a.pause(); setPreview(null); } };
+    }
+    a.onended=()=>setPreview(null);
+    a.play().catch(()=>{});
+    setPreview(a);
+  };
+
+  return (
+    <div style={{...gc,padding:"13px",marginBottom:14,borderColor:"rgba(212,175,55,.22)",background:"rgba(3,2,1,.7)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
+        <span style={{fontSize:14}}>🎵</span>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:G.gold}}>MUSIK FÜR DIESEN BEITRAG</span>
+      </div>
+
+      {/* Song selector */}
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:5}}>SONG WÄHLEN</div>
+      <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>
+        <div onClick={()=>setMusicUrl("")}
+          style={{...gc,padding:"8px 11px",cursor:"pointer",background:!musicUrl?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",borderColor:!musicUrl?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
+          <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:!musicUrl?G.gold:G.muted}}>🔇 Kein Musik</span>
+        </div>
+        {MUSIC_FILES.map(f=>(
+          <div key={f} onClick={()=>setMusicUrl(f)}
+            style={{...gc,padding:"8px 11px",cursor:"pointer",background:musicUrl===f?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",borderColor:musicUrl===f?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
+            <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:musicUrl===f?G.gold:G.muted}}>🎵 {f}</span>
+          </div>
+        ))}
+      </div>
+
+      {musicUrl&&(
+        <>
+          {/* Start / End time */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+            <div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:4}}>▶️ START (z.B. 0:30)</div>
+              <input
+                defaultValue={fmtTime(musicStart)}
+                onBlur={e=>setMusicStart(parseSec(e.target.value))}
+                placeholder="0:00"
+                style={{...gc,width:"100%",padding:"8px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.18)"}}/>
+            </div>
+            <div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:4}}>⏹️ ENDE (z.B. 0:45)</div>
+              <input
+                defaultValue={fmtTime(musicEnd)}
+                onBlur={e=>setMusicEnd(parseSec(e.target.value))}
+                placeholder="0:00"
+                style={{...gc,width:"100%",padding:"8px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.18)"}}/>
+            </div>
+          </div>
+          <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginBottom:10}}>
+            Abschnitt: {fmtTime(musicStart)} → {musicEnd>0?fmtTime(musicEnd):"Ende"} ({musicEnd>0?Math.round(musicEnd-musicStart):"∞"}s)
+          </div>
+
+          {/* Preview button */}
+          <button onClick={startPreview}
+            style={{width:"100%",background:preview?"rgba(224,92,106,.15)":"rgba(212,175,55,.1)",border:`1px solid ${preview?"rgba(224,92,106,.4)":"rgba(212,175,55,.25)"}`,color:preview?"#ff8a95":G.gold,padding:"9px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,transition:"all .2s"}}>
+            {preview?"⏹️  PREVIEW STOPPEN":"▶️  PREVIEW ANHÖREN"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
