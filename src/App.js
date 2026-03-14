@@ -60,33 +60,28 @@ function fileToB64(file, maxWidth=1200, quality=0.72) {
   });
 }
 
-// Upload file to Supabase Storage and return public URL
-async function uploadToStorage(supabaseClient, file, folder="images") {
-  const ext = file.type.includes("jpeg") ? "jpg" : "png";
-  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-  // Compress first
-  const compressed = await new Promise(res=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      const img = new Image();
-      img.onload = ()=>{
-        const c = document.createElement("canvas");
-        let w=img.width, h=img.height;
-        const maxW = 1080;
-        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
-        c.width=w; c.height=h;
-        c.getContext("2d").drawImage(img,0,0,w,h);
-        c.toBlob(blob=>res(blob), "image/jpeg", 0.75);
-      };
-      img.src = e.target.result;
+// Upload dataUrl to Supabase Storage and return public URL
+async function uploadDataUrlToStorage(supabaseClient, dataUrl, folder="images") {
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  // Compress dataUrl via canvas
+  const blob = await new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement("canvas");
+      let w=img.width, h=img.height;
+      const maxW=1080;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      c.toBlob(b=>res(b),"image/jpeg",0.75);
     };
-    reader.readAsDataURL(file);
+    img.src=dataUrl;
   });
-  const { data, error } = await supabaseClient.storage
+  const {error} = await supabaseClient.storage
     .from("bible-images")
-    .upload(fileName, compressed, { contentType:"image/jpeg", upsert:false });
+    .upload(fileName, blob, {contentType:"image/jpeg", upsert:false});
   if(error) throw new Error(error.message);
-  const { data: urlData } = supabaseClient.storage.from("bible-images").getPublicUrl(fileName);
+  const {data:urlData} = supabaseClient.storage.from("bible-images").getPublicUrl(fileName);
   return urlData.publicUrl;
 }
 
@@ -215,16 +210,15 @@ export default function App({ user, onLogout }) {
   const handleBgImage = async(file)=>{
     if(!file||!file.type.startsWith("image/")) return;
     const reader = new FileReader();
-    reader.onload = e => setNewBgImage({dataUrl: e.target.result, file});
+    reader.onload = e => setNewBgImage({dataUrl: e.target.result});
     reader.readAsDataURL(file);
   };
 
   const handleBibleImages = async(files)=>{
     const arr = Array.from(files).filter(f=>f.type.startsWith("image/")).slice(0,20);
-    // Create preview URLs for display + keep file for upload
     const conv = await Promise.all(arr.map(file=>new Promise(res=>{
       const reader=new FileReader();
-      reader.onload=e=>res({dataUrl:e.target.result, file});
+      reader.onload=e=>res({dataUrl:e.target.result});
       reader.readAsDataURL(file);
     })));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
@@ -236,21 +230,21 @@ export default function App({ user, onLogout }) {
     try {
       const imageUrls = [];
       for(let i=0; i<newImages.length; i++){
-        setSaveStatus(`BILD ${i+1}/${newImages.length}…`);
-        const url = await uploadToStorage(supabase, newImages[i].file);
+        setSaveStatus(`BILD ${i+1} VON ${newImages.length}…`);
+        const url = await uploadDataUrlToStorage(supabase, newImages[i].dataUrl, "images");
         imageUrls.push(url);
       }
       let bgUrl = null;
-      if(useBgImage && newBgImage?.file){
+      if(useBgImage && newBgImage?.dataUrl){
         setSaveStatus("HINTERGRUNDBILD…");
-        bgUrl = await uploadToStorage(supabase, newBgImage.file, "backgrounds");
+        bgUrl = await uploadDataUrlToStorage(supabase, newBgImage.dataUrl, "backgrounds");
       }
       setSaveStatus("SPEICHERE…");
       const {error} = await supabase.from("library").insert({
         title: newTitle.trim(),
         content: newContent.trim(),
         image_url: imageUrls.length>0 ? JSON.stringify(imageUrls) : null,
-        bg_image: bgUrl,
+        bg_image: bgUrl || null,
         blend_modes: blendModes.length>0 ? JSON.stringify(blendModes) : null,
         created_by: user.username,
       });
@@ -258,7 +252,7 @@ export default function App({ user, onLogout }) {
       setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setShowNewPost(false);
       await loadBible();
     } catch(e){
-      alert("Upload Fehler: "+e.message);
+      alert("Fehler beim Speichern: "+e.message);
     }
     setSavingPost(false);
     setSaveStatus("");
