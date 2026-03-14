@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const ADMIN_USERNAME = "mo";
+
 const TONES = [
   { key:"dominant", emoji:"👑", label:"Selbstsicher" },
   { key:"charming",  emoji:"🥂", label:"Charmant"    },
@@ -13,15 +16,15 @@ const TONE_DE = {
   witty:    "witzig und leicht – Humor der verbindet, nicht verletzt",
   warm:     "direkt und ehrlich – klar was du willst, respektvoll wie du es sagst",
 };
-const POWER_COLORS = { STARK:"#D4AF37", AUSGEWOGEN:"#C0C0C0", SCHWACH:"#CD7F32" };
-const STORAGE_KEY = "mp_local_v2";
+const POWER_COLORS = { STARK:"#D4AF37", AUSGEWOGEN:"#9b8ea8", SCHWACH:"#c0856a" };
+const STORAGE_KEY = "mp_local_v3";
 const LANGS = [
-  ["auto","🌍 Auto"],["de","🇩🇪 Deutsch"],["en","🇬🇧 English"],
-  ["tr","🇹🇷 Türkçe"],["fr","🇫🇷 Français"],["es","🇪🇸 Español"],
-  ["it","🇮🇹 Italiano"],["ar","🇸🇦 عربي"],["ru","🇷🇺 Русский"],
+  ["auto","🌍 Auto"],["de","🇩🇪 DE"],["en","🇬🇧 EN"],
+  ["tr","🇹🇷 TR"],["fr","🇫🇷 FR"],["es","🇪🇸 ES"],
+  ["it","🇮🇹 IT"],["ar","🇸🇦 AR"],["ru","🇷🇺 RU"],
 ];
 const LANG_LABELS = {
-  auto:"Erkenne die Sprache automatisch aus dem Profil und schreibe den Opener in dieser Sprache",
+  auto:"Erkenne die Sprache automatisch und schreibe den Opener in dieser Sprache",
   de:"Schreibe ausschließlich auf Deutsch",
   en:"Write exclusively in English",
   tr:"Yalnızca Türkçe yaz",
@@ -48,6 +51,7 @@ function fileToB64(file) {
 }
 
 export default function App({ user, onLogout }) {
+  const isAdmin = user?.username?.toLowerCase() === ADMIN_USERNAME;
   const [tab,           setTab]           = useState("opener");
   const [tone,          setTone]          = useState("charming");
   const [localMem,      setLocalMem]      = useState(loadLocal);
@@ -73,11 +77,10 @@ export default function App({ user, onLogout }) {
   const [currentId,     setCurrentId]     = useState(null);
   const [copiedIdx,     setCopiedIdx]     = useState(null);
   const chatRef = useRef();
-  // community
+  // community + history
   const [commStats,     setCommStats]     = useState(null);
   const [commInsights,  setCommInsights]  = useState([]);
   const [loadingComm,   setLoadingComm]   = useState(false);
-  // history
   const [myHistory,     setMyHistory]     = useState([]);
   const [loadingHist,   setLoadingHist]   = useState(false);
 
@@ -122,9 +125,8 @@ export default function App({ user, onLogout }) {
     const ws=worked.slice(0,4).map(d=>d.used_reply).filter(Boolean);
     const fs=failed.slice(0,2).map(d=>d.used_reply).filter(Boolean);
     if(ws.length) ctx+=`Hat funktioniert: "${ws.join('", "')}"\n`;
-    if(fs.length) ctx+=`Hat NICHT funktioniert: "${fs.join('", "')}"\n`;
+    if(fs.length) ctx+=`NICHT funktioniert: "${fs.join('", "')}"\n`;
     if(bestTone)  ctx+=`Erfolgreichster Stil: ${bestTone}\n`;
-    ctx+=`Erfolgsrate: ${data.length?Math.round(worked.length/data.length*100):0}%\n`;
     return ctx;
   };
 
@@ -142,7 +144,7 @@ export default function App({ user, onLogout }) {
 
   const generateOpener=async()=>{
     if(!profileImgs.length&&!profileNote.trim()){setOpenerErr("Bitte Bild oder Beschreibung eingeben.");return;}
-    if(!apiKey.trim()){setOpenerErr("Bitte API Key eintragen.");return;}
+    if(!apiKey.trim()){setOpenerErr("API Key fehlt – bitte Admin kontaktieren.");return;}
     setGenOpener(true); setOpenerResult(null); setOpenerErr(null);
     const parts=[];
     profileImgs.forEach(img=>parts.push({type:"image",source:{type:"base64",media_type:img.mediaType,data:img.base64}}));
@@ -150,7 +152,7 @@ export default function App({ user, onLogout }) {
 Analysiere ${profileImgs.length>0?"die Profilbilder/Screenshots":"die Profilbeschreibung"} und generiere 5 personalisierte erste Nachrichten.
 ${profileNote?`Infos: ${profileNote}`:""}
 SPRACHE: ${LANG_LABELS[openerLang]||LANG_LABELS.auto}
-PHILOSOPHIE: Spezifisch auf SIE zugeschnitten. Echter Bezug auf Bio/Hobbys/Fotos. Humor und Leichtigkeit. Kurz (max 2 Sätze). Selbstsicher aber nicht arrogant.
+PHILOSOPHIE: Spezifisch auf SIE zugeschnitten. Echter Bezug auf Bio/Hobbys/Fotos. Kurz (max 2 Sätze). Selbstsicher aber nicht arrogant.
 Ton: ${TONE_DE[tone]}
 Nur valides JSON (keine Backticks):
 {"detectedLanguage":"Deutsch/English/etc.","profileAnalysis":"Kurze Profil-Analyse","openers":[{"style":"Humor","text":"Nachricht","warum":"Warum das wirkt"},{"style":"Direkt & Ehrlich","text":"...","warum":"..."},{"style":"Neugier wecken","text":"...","warum":"..."},{"style":"Gemeinsames Interesse","text":"...","warum":"..."},{"style":"Witzig & Leicht","text":"...","warum":"..."}],"profilTipp":"Tipp für das Gespräch","vermeiden":"Was NICHT schreiben"}`});
@@ -181,7 +183,7 @@ Nur valides JSON (keine Backticks):
 
   const analyzeChat=async()=>{
     if(!chatImg) return;
-    if(!apiKey.trim()){setChatErr("Bitte API Key eintragen.");return;}
+    if(!apiKey.trim()){setChatErr("API Key fehlt – bitte Admin kontaktieren.");return;}
     setAnalyzing(true); setChatResult(null); setChatErr(null); setFeedback(null); setCurrentId(null);
     const commCtx=await buildCommCtx();
     try {
@@ -189,11 +191,10 @@ Nur valides JSON (keine Backticks):
         system:`Du bist der Chat-Coach der Manpower Bruderschaft.
 BILDLEGENDE: Farbige/lila/blaue Blase = Nutzer. Graue/dunkle Blase = sie.
 SPRACHE: Erkenne die Sprache im Chat. Analyse auf Deutsch. Antwortvorschläge in der Sprache des Chats.
-PHILOSOPHIE: Echte Verbindung. Selbstsicherheit. Humor. Authentizität.
 ${commCtx}
-Nur valides JSON (keine Backticks):
+Nur valides JSON:
 {"detectedLanguage":"Sprache","vibeScore":"7.5/10","dynamik":"STARK|AUSGEWOGEN|SCHWACH","kurzanalyse":"2-3 Sätze","staerken":["s1","s2"],"verbesserungen":["v1","v2"],"psychoInsight":"Was verrät ihre Kommunikation?","naechsterSchritt":"Konkret was tun?","replies":[{"label":"Selbstsicher","text":"Antwort in Chat-Sprache","warum":"Erklärung Deutsch"},{"label":"Charmant","text":"...","warum":"..."},{"label":"Witzig","text":"...","warum":"..."}],"prinzip":"Kommunikationsprinzip","situation":"2-3 Wörter"}`,
-        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:chatImg.mediaType,data:chatImg.base64}},{type:"text",text:`Analysiere diesen Chat. Farbige Blase=ich, graue=sie. Ton: ${TONE_DE[tone]}. Erkenne Sprache, schreibe Antworten in Chat-Sprache. Nur JSON.`}]}]})});
+        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:chatImg.mediaType,data:chatImg.base64}},{type:"text",text:`Analysiere diesen Chat. Farbige Blase=ich, graue=sie. Ton: ${TONE_DE[tone]}. Nur JSON.`}]}]})});
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const raw=data.content?.map(i=>i.text||"").join("")||"";
@@ -221,77 +222,124 @@ Nur valides JSON (keine Backticks):
 
   const TABS=[["opener","💬 Opener"],["analyze","⚔ Analyse"],["community","🌐 Community"],["history","📊 Verlauf"],["tips","💡 Prinzipien"]];
 
+  // ─── DESIGN TOKENS ──────────────────────────────────────
+  const C = {
+    bg:        "#0e0a0f",
+    bg2:       "#16101a",
+    bg3:       "#1f1625",
+    surface:   "rgba(255,255,255,.03)",
+    border:    "rgba(212,175,55,.14)",
+    borderHov: "#D4AF37",
+    gold:      "#D4AF37",
+    gold2:     "#8B6914",
+    gold3:     "#F5E27A",
+    rose:      "#c9677d",
+    rose2:     "#e8a0b0",
+    text:      "#f0e8ec",
+    muted:     "rgba(240,232,236,.38)",
+    red:       "#e05c6a",
+    green:     "#5cb87a",
+  };
+
   return (
-    <div style={{background:"#080808",minHeight:"100vh",color:"#F5F0E8",fontFamily:"Georgia,serif",overflowX:"hidden",position:"relative"}}>
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"Georgia,serif",overflowX:"hidden",position:"relative"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lato:wght@300;400;700&display=swap');
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
-        @keyframes glow{0%,100%{box-shadow:0 0 10px rgba(212,175,55,.18)}50%{box-shadow:0 0 24px rgba(212,175,55,.42)}}
+        @keyframes glowrose{0%,100%{box-shadow:0 0 12px rgba(201,103,125,.2)}50%{box-shadow:0 0 28px rgba(201,103,125,.45)}}
+        @keyframes heartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
         *{box-sizing:border-box;}
-        .gb:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(212,175,55,.34)!important;}
-        .gb{transition:all .25s;}
+        .gb:not(:disabled):hover{transform:translateY(-3px)!important;filter:brightness(1.1);}
+        .gb{transition:all .25s!important;}
         .rc{transition:all .22s;cursor:pointer;}
-        .rc:hover{border-color:#D4AF37!important;transform:translateX(4px);background:rgba(212,175,55,.06)!important;}
+        .rc:hover{border-color:#D4AF37!important;transform:translateX(4px);background:rgba(212,175,55,.07)!important;}
         .tp{transition:all .2s;cursor:pointer;}
-        .tp:hover{border-color:rgba(212,175,55,.5)!important;}
+        .tp:hover{border-color:rgba(201,103,125,.5)!important;}
         .dz{transition:all .25s;cursor:pointer;}
-        .dz:hover{border-color:#D4AF37!important;}
+        .dz:hover{border-color:#c9677d!important;background:rgba(201,103,125,.05)!important;}
         .fb{transition:all .18s;cursor:pointer;}
-        .fb:hover{transform:scale(1.04);}
+        .fb:hover{transform:scale(1.05);}
+        .tabpill{transition:all .2s;cursor:pointer;}
+        .tabpill:hover{color:#D4AF37!important;}
         input,textarea,select{outline:none;}
         ::-webkit-scrollbar{width:3px;}
-        ::-webkit-scrollbar-thumb{background:#D4AF37;border-radius:2px;}
+        ::-webkit-scrollbar-thumb{background:linear-gradient(#c9677d,#D4AF37);border-radius:2px;}
+        ::placeholder{color:rgba(240,232,236,.2);}
       `}</style>
-      <div style={{position:"fixed",inset:0,zIndex:0,background:"radial-gradient(ellipse 65% 40% at 50% 0%,rgba(212,175,55,.08) 0%,transparent 55%)",pointerEvents:"none"}}/>
-      <div style={{position:"fixed",inset:0,zIndex:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.013) 0,rgba(212,175,55,.013) 1px,transparent 1px,transparent 80px),repeating-linear-gradient(90deg,rgba(212,175,55,.013) 0,rgba(212,175,55,.013) 1px,transparent 1px,transparent 80px)",pointerEvents:"none"}}/>
 
-      <div style={{position:"relative",zIndex:1,maxWidth:800,margin:"0 auto",padding:"0 15px 80px"}}>
+      {/* Atmospheric background */}
+      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none"}}>
+        <div style={{position:"absolute",inset:0,background:`radial-gradient(ellipse 80% 50% at 50% -10%,rgba(201,103,125,.12) 0%,transparent 55%),radial-gradient(ellipse 60% 60% at 100% 100%,rgba(212,175,55,.06) 0%,transparent 50%),radial-gradient(ellipse 50% 50% at 0% 80%,rgba(139,105,20,.08) 0%,transparent 50%)`}}/>
+        <div style={{position:"absolute",inset:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 80px),repeating-linear-gradient(90deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 80px)"}}/>
+      </div>
 
-        {/* HEADER */}
-        <header style={{textAlign:"center",padding:"26px 0 16px",borderBottom:"1px solid rgba(212,175,55,.15)",marginBottom:16}}>
-          <div style={{width:56,height:56,margin:"0 auto 10px",border:"2px solid #D4AF37",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",animation:"glow 3s ease infinite"}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:22,fontWeight:900,color:"#D4AF37"}}>M</span>
+      <div style={{position:"relative",zIndex:1,maxWidth:820,margin:"0 auto",padding:"0 15px 80px"}}>
+
+        {/* ── HEADER ── */}
+        <header style={{textAlign:"center",padding:"30px 0 22px",borderBottom:`1px solid rgba(201,103,125,.2)`,marginBottom:22,position:"relative"}}>
+          {/* Decorative lines */}
+          <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(201,103,125,.15),rgba(212,175,55,.2),rgba(201,103,125,.15),transparent)",pointerEvents:"none"}}/>
+
+          {/* Logo */}
+          <div style={{width:62,height:62,margin:"0 auto 10px",position:"relative"}}>
+            <div style={{width:"100%",height:"100%",border:"2px solid",borderColor:C.gold,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:"radial-gradient(circle,rgba(201,103,125,.08),rgba(212,175,55,.05))",animation:"glowrose 4s ease infinite"}}>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:24,fontWeight:900,background:`linear-gradient(135deg,${C.gold3},${C.gold},${C.rose2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>M</span>
+            </div>
+            <div style={{position:"absolute",top:-3,right:-3,width:10,height:10,background:C.rose,borderRadius:"50%",animation:"heartbeat 2s ease infinite"}}/>
           </div>
-          <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,4vw,30px)",letterSpacing:5,background:"linear-gradient(90deg,#8B6914,#D4AF37,#F5E27A,#D4AF37,#8B6914)",backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 4s linear infinite",marginBottom:2}}>MANPOWER</div>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:8,color:"rgba(212,175,55,.4)",marginBottom:10}}>BRUDERSCHAFT · DATE COACH</div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
-            <Stat val={localMem.totalAnalyses||0} label="Analysen"/>
-            <Stat val={localMem.totalOpeners||0}  label="Opener"/>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.32)"}}>👤 {user?.username?.toUpperCase()}</span>
-            <button onClick={onLogout} style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.13)",color:"rgba(212,175,55,.32)",padding:"2px 8px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:3}}>LOGOUT</button>
+
+          <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,4vw,32px)",letterSpacing:6,background:`linear-gradient(90deg,${C.gold2},${C.gold},${C.gold3},${C.rose2},${C.gold3},${C.gold},${C.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:8,color:"rgba(201,103,125,.5)",marginBottom:12}}>BRUDERSCHAFT · DATE COACH</div>
+
+          {/* Stats + user */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+            <StatBadge val={localMem.totalAnalyses||0} label="Analysen" color={C.gold}/>
+            <div style={{width:1,height:20,background:"rgba(201,103,125,.2)"}}/>
+            <StatBadge val={localMem.totalOpeners||0} label="Opener" color={C.rose}/>
+            <div style={{width:1,height:20,background:"rgba(201,103,125,.2)"}}/>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:C.muted}}>
+              {isAdmin?"👑":"👤"} {user?.username?.toUpperCase()}
+            </span>
+            <button onClick={onLogout} style={{background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.2)",color:"rgba(201,103,125,.5)",padding:"3px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:20,transition:"all .2s"}}>LOGOUT</button>
           </div>
         </header>
 
-        {/* API KEY */}
-        <div style={{background:"rgba(212,175,55,.03)",border:"1px solid rgba(212,175,55,.13)",borderRadius:4,padding:"10px 13px",marginBottom:14}}>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.36)",marginBottom:5}}>ANTHROPIC API KEY</div>
-          <div style={{display:"flex",gap:6}}>
-            <input type={showKey?"text":"password"} placeholder="sk-ant-..." value={apiKey} onChange={e=>saveKey(e.target.value)}
-              style={{flex:1,background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.15)",borderRadius:3,padding:"7px 10px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:13}}/>
-            <button onClick={()=>setShowKey(s=>!s)} style={{background:"rgba(212,175,55,.05)",border:"1px solid rgba(212,175,55,.13)",color:"#D4AF37",padding:"7px 10px",cursor:"pointer",borderRadius:3,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1}}>{showKey?"HIDE":"SHOW"}</button>
+        {/* ── ADMIN ONLY: API KEY ── */}
+        {isAdmin && (
+          <div style={{background:"rgba(212,175,55,.04)",border:`1px solid rgba(212,175,55,.18)`,borderLeft:`3px solid ${C.gold2}`,borderRadius:8,padding:"12px 15px",marginBottom:18}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+              <span style={{fontSize:12}}>👑</span>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:`rgba(212,175,55,.5)`}}>ADMIN · ANTHROPIC API KEY</div>
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <input type={showKey?"text":"password"} placeholder="sk-ant-..." value={apiKey} onChange={e=>saveKey(e.target.value)}
+                style={{flex:1,background:"rgba(0,0,0,.4)",border:`1px solid rgba(212,175,55,.15)`,borderRadius:6,padding:"8px 12px",color:C.text,fontFamily:"'Lato',sans-serif",fontSize:13}}/>
+              <button onClick={()=>setShowKey(s=>!s)} style={{background:"rgba(212,175,55,.07)",border:`1px solid rgba(212,175,55,.15)`,color:C.gold,padding:"8px 12px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1}}>{showKey?"HIDE":"SHOW"}</button>
+            </div>
+            <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.25)",marginTop:5}}>Nur für Admins sichtbar · console.anthropic.com → API Keys</div>
           </div>
-          <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(245,240,232,.2)",marginTop:4}}>console.anthropic.com → API Keys → Create Key</div>
-        </div>
+        )}
 
-        {/* TONE */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginBottom:14}}>
+        {/* ── TONE SELECTOR ── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:18}}>
           {TONES.map(t=>(
             <div key={t.key} className="tp" onClick={()=>setTone(t.key)}
-              style={{background:tone===t.key?"rgba(212,175,55,.1)":"rgba(255,255,255,.02)",border:`1px solid ${tone===t.key?"#D4AF37":"rgba(212,175,55,.12)"}`,borderRadius:4,padding:"10px 4px",textAlign:"center",boxShadow:tone===t.key?"0 0 11px rgba(212,175,55,.11)":"none"}}>
-              <div style={{fontSize:15,marginBottom:2}}>{t.emoji}</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1.5,color:tone===t.key?"#D4AF37":"rgba(245,240,232,.26)"}}>{t.label.toUpperCase()}</div>
+              style={{background:tone===t.key?`rgba(201,103,125,.12)`:"rgba(255,255,255,.02)",border:`1px solid ${tone===t.key?"rgba(201,103,125,.6)":"rgba(201,103,125,.15)"}`,borderRadius:10,padding:"11px 5px",textAlign:"center",boxShadow:tone===t.key?"0 0 18px rgba(201,103,125,.18)":"none",position:"relative",overflow:"hidden"}}>
+              {tone===t.key&&<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 0%,rgba(201,103,125,.08),transparent 70%)"}}/>}
+              <div style={{fontSize:17,marginBottom:3,position:"relative"}}>{t.emoji}</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1.5,color:tone===t.key?C.rose2:C.muted,position:"relative"}}>{t.label.toUpperCase()}</div>
             </div>
           ))}
         </div>
 
-        {/* TABS */}
-        <div style={{display:"flex",gap:0,marginBottom:18,borderBottom:"1px solid rgba(212,175,55,.11)",overflowX:"auto"}}>
+        {/* ── TABS ── */}
+        <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid rgba(201,103,125,.12)`,overflowX:"auto"}}>
           {TABS.map(([key,label])=>(
-            <div key={key} className="tp" onClick={()=>setTab(key)}
-              style={{padding:"8px 12px",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1.5,whiteSpace:"nowrap",color:tab===key?"#D4AF37":"rgba(212,175,55,.27)",borderBottom:tab===key?"2px solid #D4AF37":"2px solid transparent",marginBottom:-1}}>
+            <div key={key} className="tabpill" onClick={()=>setTab(key)}
+              style={{padding:"9px 14px",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1.5,whiteSpace:"nowrap",color:tab===key?C.gold:C.muted,borderBottom:tab===key?`2px solid ${C.gold}`:"2px solid transparent",marginBottom:-1}}>
               {label}
             </div>
           ))}
@@ -300,90 +348,93 @@ Nur valides JSON (keine Backticks):
         {/* ══ OPENER TAB ══ */}
         {tab==="opener"&&(
           <div style={{animation:"fadeUp .35s ease"}}>
-            <SLabel>💬 OPENER GENERATOR</SLabel>
-            <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,240,232,.35)",marginBottom:14,lineHeight:1.6}}>Lade Profilbilder hoch → KI generiert 5 personalisierte erste Nachrichten in ihrer Sprache.</div>
+            <SectionTitle icon="💬" title="OPENER GENERATOR" subtitle="Profilbilder hochladen → KI generiert 5 personalisierte erste Nachrichten in ihrer Sprache" C={C}/>
 
-            <SLabel>🌍 SPRACHE</SLabel>
-            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
+            <SLabel C={C}>🌍 SPRACHE WÄHLEN</SLabel>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:16}}>
               {LANGS.map(([k,l])=>(
                 <div key={k} className="tp" onClick={()=>setOpenerLang(k)}
-                  style={{background:openerLang===k?"rgba(212,175,55,.12)":"rgba(255,255,255,.02)",border:`1px solid ${openerLang===k?"#D4AF37":"rgba(212,175,55,.13)"}`,borderRadius:20,padding:"4px 10px",fontFamily:"'Lato',sans-serif",fontSize:11,color:openerLang===k?"#D4AF37":"rgba(245,240,232,.32)",whiteSpace:"nowrap"}}>
+                  style={{background:openerLang===k?"rgba(201,103,125,.12)":"rgba(255,255,255,.02)",border:`1px solid ${openerLang===k?"rgba(201,103,125,.5)":"rgba(201,103,125,.15)"}`,borderRadius:20,padding:"5px 12px",fontFamily:"'Lato',sans-serif",fontSize:11,color:openerLang===k?C.rose2:C.muted,whiteSpace:"nowrap"}}>
                   {l}
                 </div>
               ))}
             </div>
 
-            <SLabel>📸 PROFILBILDER / SCREENSHOTS (bis zu 5)</SLabel>
+            <SLabel C={C}>📸 PROFILBILDER / SCREENSHOTS (bis zu 5)</SLabel>
             <div className="dz"
-              style={{background:openerDrag?"rgba(212,175,55,.07)":"rgba(255,255,255,.02)",border:`1px dashed ${openerDrag?"#D4AF37":"rgba(212,175,55,.18)"}`,borderRadius:4,padding:"24px 18px",textAlign:"center",marginBottom:8}}
+              style={{background:openerDrag?"rgba(201,103,125,.07)":"rgba(255,255,255,.02)",border:`1px dashed ${openerDrag?"rgba(201,103,125,.6)":"rgba(201,103,125,.25)"}`,borderRadius:12,padding:"26px 20px",textAlign:"center",marginBottom:10}}
               onClick={()=>profileRef.current?.click()}
               onDragOver={e=>{e.preventDefault();setOpenerDrag(true);}}
               onDragLeave={()=>setOpenerDrag(false)}
               onDrop={onProfileDrop}>
-              <div style={{fontSize:22,marginBottom:6,opacity:.35}}>📸</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2,color:"#D4AF37",marginBottom:2}}>Profilbilder einwerfen</div>
-              <div style={{fontFamily:"'Lato',sans-serif",color:"rgba(245,240,232,.22)",fontSize:11}}>Bio, Fotos, Hobbys – alles hilft der KI</div>
+              <div style={{fontSize:26,marginBottom:7,opacity:.5}}>📸</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2,color:C.rose2,marginBottom:3}}>Profilbilder einwerfen</div>
+              <div style={{fontFamily:"'Lato',sans-serif",color:C.muted,fontSize:11}}>Bio-Screenshot · Fotos · Hobbys · alles hilft der KI</div>
             </div>
             <input ref={profileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>await handleProfileFiles(e.target.files)}/>
 
             {profileImgs.length>0&&(
-              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5,marginBottom:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5,marginBottom:12}}>
                 {profileImgs.map((img,i)=>(
-                  <div key={i} style={{position:"relative",borderRadius:4,overflow:"hidden",border:"1px solid rgba(212,175,55,.18)"}}>
-                    <img src={img.dataUrl} alt="" style={{width:"100%",height:64,objectFit:"cover",display:"block"}}/>
+                  <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",border:`1px solid rgba(201,103,125,.2)`}}>
+                    <img src={img.dataUrl} alt="" style={{width:"100%",height:68,objectFit:"cover",display:"block"}}/>
                     <button onClick={()=>setProfileImgs(prev=>prev.filter((_,j)=>j!==i))}
-                      style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,.75)",border:"none",color:"#ff6b6b",width:16,height:16,borderRadius:"50%",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                      style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.8)",border:"none",color:"#ff6b6b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
                   </div>
                 ))}
                 {profileImgs.length<5&&(
                   <div className="dz" onClick={()=>profileRef.current?.click()}
-                    style={{height:64,border:"1px dashed rgba(212,175,55,.18)",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(212,175,55,.28)",fontSize:18}}>+</div>
+                    style={{height:68,border:`1px dashed rgba(201,103,125,.2)`,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(201,103,125,.3)",fontSize:20}}>+</div>
                 )}
               </div>
             )}
 
-            <div style={{marginBottom:14}}>
-              <SLabel>✍️ PROFIL BESCHREIBEN (optional)</SLabel>
-              <textarea value={profileNote} onChange={e=>setProfileNote(e.target.value)}
-                placeholder="z.B. Sie ist 26, Ärztin, liebt Reisen und Yoga. Bio: 'Kaffee > Menschen'. Foto in Thailand."
-                rows={3} style={{width:"100%",background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.15)",borderRadius:3,padding:"9px 11px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:13,resize:"vertical",lineHeight:1.6}}/>
-            </div>
+            <SLabel C={C}>✍️ PROFIL BESCHREIBEN (optional)</SLabel>
+            <textarea value={profileNote} onChange={e=>setProfileNote(e.target.value)}
+              placeholder="z.B. Sie ist 26, Ärztin, liebt Reisen und Yoga. Bio: 'Kaffee > Menschen'. Foto in Thailand."
+              rows={3} style={{width:"100%",background:"rgba(0,0,0,.35)",border:`1px solid rgba(201,103,125,.18)`,borderRadius:8,padding:"10px 13px",color:C.text,fontFamily:"'Lato',sans-serif",fontSize:13,resize:"vertical",lineHeight:1.6,marginBottom:16}}/>
 
-            <button className="gb" onClick={generateOpener} disabled={genOpener}
-              style={{width:"100%",background:genOpener?"rgba(212,175,55,.06)":"linear-gradient(135deg,#8B6914,#D4AF37,#F5E27A,#D4AF37,#8B6914)",backgroundSize:"200% auto",border:"none",borderRadius:4,padding:"14px",color:genOpener?"rgba(212,175,55,.22)":"#080808",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:genOpener?"not-allowed":"pointer",marginBottom:16,animation:genOpener?"none":"shimmer 3s linear infinite",boxShadow:"none"}}>
-              {genOpener?"GENERIERE OPENER…":"💬  OPENER GENERIEREN"}
-            </button>
+            <RoseGoldButton onClick={generateOpener} disabled={genOpener} C={C}>
+              {genOpener?"✨  GENERIERE OPENER…":"💬  OPENER GENERIEREN"}
+            </RoseGoldButton>
 
-            {genOpener&&<Loading text="KI ANALYSIERT PROFIL…"/>}
-            {openerErr&&<ErrBox>{openerErr}</ErrBox>}
+            {genOpener&&<Loader text="KI ANALYSIERT PROFIL UND GENERIERT OPENER…" C={C}/>}
+            {openerErr&&<ErrBox C={C}>{openerErr}</ErrBox>}
 
             {openerResult&&(
               <div style={{animation:"fadeUp .4s ease"}}>
-                <div style={{display:"flex",gap:7,marginBottom:8}}>
-                  <Card flex><SLabel small>🌍 SPRACHE</SLabel><div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:"#D4AF37"}}>{openerResult.detectedLanguage}</div></Card>
-                </div>
-                <Card borderLeft="#9b59b6"><SLabel small>🔍 PROFIL-ANALYSE</SLabel><Body>{openerResult.profileAnalysis}</Body></Card>
-                <SLabel>💬 OPENER – ANTIPPEN ZUM KOPIEREN</SLabel>
-                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+                <InfoCard icon="🌍" label="ERKANNTE SPRACHE" borderColor={C.rose} C={C}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:700,color:C.rose2}}>{openerResult.detectedLanguage}</div>
+                </InfoCard>
+                <InfoCard icon="🔍" label="PROFIL-ANALYSE" borderColor={C.gold} C={C}>
+                  <Body C={C}>{openerResult.profileAnalysis}</Body>
+                </InfoCard>
+
+                <SLabel C={C}>💬 OPENER – ANTIPPEN ZUM KOPIEREN</SLabel>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
                   {openerResult.openers?.map((o,i)=>(
                     <div key={i} className="rc" onClick={()=>copyOpener(o.text,i)}
-                      style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.12)",borderRadius:4,padding:"12px 13px",position:"relative"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#D4AF37",opacity:.58}}>{o.style?.toUpperCase()}</span>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedOpener===i?"#D4AF37":"rgba(212,175,55,.18)",transition:"color .2s"}}>{copiedOpener===i?"✓ KOPIERT":"COPY"}</span>
+                      style={{background:C.surface,border:`1px solid ${copiedOpener===i?"rgba(201,103,125,.5)":C.border}`,borderRadius:10,padding:"13px 15px",position:"relative",boxShadow:copiedOpener===i?"0 0 18px rgba(201,103,125,.15)":"none"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:C.rose,opacity:.7}}>{o.style?.toUpperCase()}</span>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedOpener===i?C.rose:C.muted,transition:"color .2s"}}>{copiedOpener===i?"✓ KOPIERT":"COPY"}</span>
                       </div>
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:15,lineHeight:1.6,color:"#F5F0E8",marginBottom:5,fontWeight:500}}>{o.text}</div>
-                      {o.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.38)",fontStyle:"italic"}}>💡 {o.warum}</div>}
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:15,lineHeight:1.65,color:C.text,marginBottom:6,fontWeight:500}}>{o.text}</div>
+                      {o.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(201,103,125,.45)",fontStyle:"italic"}}>💡 {o.warum}</div>}
                     </div>
                   ))}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
-                  <Card borderLeft="#2ecc71"><SLabel small>💡 PROFIL-TIPP</SLabel><Body>{openerResult.profilTipp}</Body></Card>
-                  <Card borderLeft="#e74c3c"><SLabel small>🚫 VERMEIDEN</SLabel><Body>{openerResult.vermeiden}</Body></Card>
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                  <InfoCard icon="💡" label="PROFIL-TIPP" borderColor={C.green} C={C}><Body C={C}>{openerResult.profilTipp}</Body></InfoCard>
+                  <InfoCard icon="🚫" label="VERMEIDEN" borderColor={C.red} C={C}><Body C={C}>{openerResult.vermeiden}</Body></InfoCard>
                 </div>
+
                 <div style={{textAlign:"center"}}>
                   <button onClick={()=>{setProfileImgs([]);setProfileNote("");setOpenerResult(null);setOpenerLang("auto");}}
-                    style={{background:"rgba(212,175,55,.05)",border:"1px solid rgba(212,175,55,.14)",color:"rgba(212,175,55,.45)",padding:"6px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:3}}>🔄 NEUES PROFIL</button>
+                    style={{background:"rgba(201,103,125,.07)",border:`1px solid rgba(201,103,125,.18)`,color:"rgba(201,103,125,.5)",padding:"7px 20px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:20}}>
+                    🔄 NEUES PROFIL
+                  </button>
                 </div>
               </div>
             )}
@@ -393,93 +444,108 @@ Nur valides JSON (keine Backticks):
         {/* ══ ANALYSE TAB ══ */}
         {tab==="analyze"&&(
           <div style={{animation:"fadeUp .35s ease"}}>
-            <SLabel>⚔ CHAT-ANALYSE</SLabel>
-            <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,240,232,.35)",marginBottom:12,lineHeight:1.6}}>Screenshot hochladen → KI erkennt Sprache → Antworten in Chat-Sprache.</div>
+            <SectionTitle icon="⚔" title="CHAT-ANALYSE" subtitle="Screenshot hochladen → KI erkennt Sprache automatisch → Antworten in der Sprache des Chats" C={C}/>
+
             <div className="dz"
-              style={{background:chatDrag?"rgba(212,175,55,.07)":"rgba(255,255,255,.02)",border:`1px solid ${chatDrag?"#D4AF37":"rgba(212,175,55,.16)"}`,borderRadius:4,padding:chatImg?0:"36px 22px",textAlign:"center",cursor:chatImg?"default":"pointer",marginBottom:16,overflow:"hidden"}}
+              style={{background:chatDrag?"rgba(201,103,125,.07)":"rgba(255,255,255,.02)",border:`1px solid ${chatDrag?"rgba(201,103,125,.5)":C.border}`,borderRadius:12,padding:chatImg?0:"38px 22px",textAlign:"center",cursor:chatImg?"default":"pointer",marginBottom:18,overflow:"hidden"}}
               onClick={()=>!chatImg&&chatRef.current?.click()}
               onDragOver={e=>{e.preventDefault();setChatDrag(true);}}
               onDragLeave={()=>setChatDrag(false)}
               onDrop={onChatDrop}>
               {chatImg?(
                 <div style={{position:"relative"}}>
-                  <img src={chatImg.dataUrl} alt="" style={{width:"100%",maxHeight:270,objectFit:"cover",display:"block"}}/>
-                  <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(8,8,8,.55) 0%,transparent 40%)"}}/>
-                  <div style={{position:"absolute",bottom:9,left:11,right:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"#D4AF37"}}>✓ BEREIT</span>
+                  <img src={chatImg.dataUrl} alt="" style={{width:"100%",maxHeight:280,objectFit:"cover",display:"block"}}/>
+                  <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(14,10,15,.65) 0%,transparent 40%)"}}/>
+                  <div style={{position:"absolute",bottom:11,left:13,right:13,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:C.rose2}}>✓ BEREIT ZUR ANALYSE</span>
                     <button onClick={e=>{e.stopPropagation();setChatImg(null);setChatResult(null);setFeedback(null);setCurrentId(null);}}
-                      style={{background:"rgba(0,0,0,.75)",border:"1px solid rgba(212,175,55,.26)",color:"#D4AF37",padding:"3px 8px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>ÄNDERN</button>
+                      style={{background:"rgba(0,0,0,.75)",border:`1px solid rgba(201,103,125,.28)`,color:C.rose2,padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:4}}>ÄNDERN</button>
                   </div>
                 </div>
               ):(
-                <><div style={{fontSize:22,marginBottom:7,opacity:.32}}>📸</div>
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2,color:"#D4AF37",marginBottom:2}}>Screenshot einwerfen</div>
-                <div style={{fontFamily:"'Lato',sans-serif",color:"rgba(245,240,232,.22)",fontSize:11}}>Drag & Drop oder <span style={{color:"#D4AF37"}}>auswählen</span></div></>
+                <>
+                  <div style={{fontSize:24,marginBottom:8,opacity:.4}}>📸</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:2,color:C.rose2,marginBottom:3}}>Chat-Screenshot einwerfen</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",color:C.muted,fontSize:11}}>Drag & Drop oder <span style={{color:C.rose}}>auswählen</span></div>
+                </>
               )}
             </div>
             <input ref={chatRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleChatFile(e.target.files[0])}/>
 
-            <button className="gb" onClick={analyzeChat} disabled={!chatImg||analyzing}
-              style={{width:"100%",background:!chatImg||analyzing?"rgba(212,175,55,.06)":"linear-gradient(135deg,#8B6914,#D4AF37,#F5E27A,#D4AF37,#8B6914)",backgroundSize:"200% auto",border:"none",borderRadius:4,padding:"14px",color:!chatImg||analyzing?"rgba(212,175,55,.22)":"#080808",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:!chatImg||analyzing?"not-allowed":"pointer",marginBottom:16,animation:!chatImg||analyzing?"none":"shimmer 3s linear infinite",boxShadow:"none"}}>
-              {analyzing?"ANALYSIERE…":"⚔  TIEFENANALYSE STARTEN"}
-            </button>
+            <RoseGoldButton onClick={analyzeChat} disabled={!chatImg||analyzing} C={C}>
+              {analyzing?"✨  ANALYSIERE CHAT…":"⚔  TIEFENANALYSE STARTEN"}
+            </RoseGoldButton>
 
-            {analyzing&&<Loading text="COMMUNITY-DATEN + KI ANALYSIERT…"/>}
-            {chatErr&&<ErrBox>{chatErr}</ErrBox>}
+            {analyzing&&<Loader text="COMMUNITY-DATEN LADEN · KI ANALYSIERT…" C={C}/>}
+            {chatErr&&<ErrBox C={C}>{chatErr}</ErrBox>}
 
             {chatResult&&(
               <div style={{animation:"fadeUp .42s ease"}}>
                 {chatResult.detectedLanguage&&(
-                  <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.13)",borderRadius:4,padding:"7px 13px",marginBottom:8,display:"flex",alignItems:"center",gap:7}}>
-                    <span style={{fontSize:13}}>🌍</span>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.4)"}}>SPRACHE · </span>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:10,color:"#D4AF37",fontWeight:700}}>{chatResult.detectedLanguage}</span>
+                  <div style={{background:"rgba(201,103,125,.05)",border:`1px solid rgba(201,103,125,.18)`,borderRadius:8,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:14}}>🌍</span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(201,103,125,.45)"}}>ERKANNTE SPRACHE · </span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:C.rose2,fontWeight:700}}>{chatResult.detectedLanguage}</span>
                   </div>
                 )}
-                <div style={{display:"flex",gap:6,marginBottom:7}}>
-                  <Card flex><SLabel small>VIBE SCORE</SLabel><div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:900,color:"#D4AF37"}}>{chatResult.vibeScore}</div></Card>
-                  <Card flex style={{textAlign:"right"}}><SLabel small>DYNAMIK</SLabel><div style={{fontFamily:"'Cinzel',serif",fontSize:17,fontWeight:900,color:POWER_COLORS[chatResult.dynamik]||"#D4AF37"}}>{chatResult.dynamik}</div></Card>
+
+                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                  <ScoreCard label="VIBE SCORE" value={chatResult.vibeScore} color={C.gold} C={C}/>
+                  <ScoreCard label="DYNAMIK" value={chatResult.dynamik} color={POWER_COLORS[chatResult.dynamik]||C.gold} C={C} right/>
                 </div>
-                <Card borderLeft="#D4AF37"><SLabel small>🔍 ANALYSE</SLabel><Body>{chatResult.kurzanalyse}</Body></Card>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
-                  <Card borderLeft="#2ecc71"><SLabel small>✅ STÄRKEN</SLabel>{(chatResult.staerken||[]).map((s,i)=><Small key={i}>· {s}</Small>)}</Card>
-                  <Card borderLeft="#e67e22"><SLabel small>⚡ VERBESSERN</SLabel>{(chatResult.verbesserungen||[]).map((v,i)=><Small key={i}>· {v}</Small>)}</Card>
+
+                <InfoCard icon="🔍" label="ANALYSE" borderColor={C.gold} C={C}><Body C={C}>{chatResult.kurzanalyse}</Body></InfoCard>
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                  <InfoCard icon="✅" label="STÄRKEN" borderColor={C.green} C={C} small>
+                    {(chatResult.staerken||[]).map((s,i)=><Small key={i} C={C}>· {s}</Small>)}
+                  </InfoCard>
+                  <InfoCard icon="⚡" label="VERBESSERN" borderColor="#e67e22" C={C} small>
+                    {(chatResult.verbesserungen||[]).map((v,i)=><Small key={i} C={C}>· {v}</Small>)}
+                  </InfoCard>
                 </div>
-                <Card borderLeft="#9b59b6"><SLabel small>🧠 PSYCHO-INSIGHT</SLabel><Body>{chatResult.psychoInsight}</Body></Card>
-                <Card borderLeft="#D4AF37"><SLabel small>🎯 NÄCHSTER SCHRITT</SLabel><div style={{fontFamily:"'Lato',sans-serif",color:"#D4AF37",fontSize:13,fontWeight:700,lineHeight:1.7}}>{chatResult.naechsterSchritt}</div></Card>
-                <div style={{background:"rgba(212,175,55,.03)",border:"1px solid rgba(212,175,55,.11)",borderLeft:"2px solid #8B6914",borderRadius:4,padding:"8px 12px",marginBottom:7}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.36)"}}>⚔ PRINZIP · </span>
-                  <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,240,232,.6)",fontStyle:"italic"}}>{chatResult.prinzip}</span>
+
+                <InfoCard icon="🧠" label="PSYCHO-INSIGHT" borderColor="#9b59b6" C={C}><Body C={C}>{chatResult.psychoInsight}</Body></InfoCard>
+                <InfoCard icon="🎯" label="NÄCHSTER SCHRITT" borderColor={C.rose} C={C}>
+                  <div style={{fontFamily:"'Lato',sans-serif",color:C.rose2,fontSize:13,fontWeight:700,lineHeight:1.7}}>{chatResult.naechsterSchritt}</div>
+                </InfoCard>
+
+                <div style={{background:`rgba(139,105,20,.08)`,border:`1px solid rgba(212,175,55,.14)`,borderLeft:`2px solid ${C.gold2}`,borderRadius:8,padding:"9px 13px",marginBottom:10}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.4)"}}>⚔ PRINZIP · </span>
+                  <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(240,232,236,.6)",fontStyle:"italic"}}>{chatResult.prinzip}</span>
                 </div>
-                <SLabel style={{marginTop:10}}>ANTWORTEN IN {chatResult.detectedLanguage?.toUpperCase()||"CHAT-SPRACHE"} — ANTIPPEN</SLabel>
-                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+
+                <SLabel C={C}>ANTWORTEN IN {chatResult.detectedLanguage?.toUpperCase()||"CHAT-SPRACHE"} — ANTIPPEN</SLabel>
+                <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
                   {chatResult.replies?.map((r,i)=>(
                     <div key={i} className="rc" onClick={()=>copyReply(r.text,i,r.label)}
-                      style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.11)",borderRadius:4,padding:"11px 12px",position:"relative"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#D4AF37",opacity:.55}}>{r.label?.toUpperCase()}</span>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedIdx===i?"#D4AF37":"rgba(212,175,55,.16)",transition:"color .2s"}}>{copiedIdx===i?"✓ KOPIERT":"COPY"}</span>
+                      style={{background:C.surface,border:`1px solid ${copiedIdx===i?"rgba(201,103,125,.45)":C.border}`,borderRadius:10,padding:"12px 14px",position:"relative",boxShadow:copiedIdx===i?"0 0 16px rgba(201,103,125,.12)":"none"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:C.rose,opacity:.6}}>{r.label?.toUpperCase()}</span>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedIdx===i?C.rose:C.muted,transition:"color .2s"}}>{copiedIdx===i?"✓ KOPIERT":"COPY"}</span>
                       </div>
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:14,lineHeight:1.6,color:"#F5F0E8",marginBottom:4}}>{r.text}</div>
-                      {r.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.36)",fontStyle:"italic"}}>💡 {r.warum}</div>}
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:14,lineHeight:1.65,color:C.text,marginBottom:5}}>{r.text}</div>
+                      {r.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(201,103,125,.4)",fontStyle:"italic"}}>💡 {r.warum}</div>}
                     </div>
                   ))}
                 </div>
-                <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.15)",borderRadius:4,padding:"13px"}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.42)",marginBottom:3,textAlign:"center"}}>🌐 COMMUNITY FEEDBACK</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(245,240,232,.24)",textAlign:"center",marginBottom:10}}>Dein Feedback verbessert die App für alle</div>
+
+                {/* Feedback */}
+                <div style={{background:"rgba(201,103,125,.04)",border:`1px solid rgba(201,103,125,.18)`,borderRadius:10,padding:"14px"}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(201,103,125,.45)",marginBottom:3,textAlign:"center"}}>🌐 COMMUNITY FEEDBACK</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:C.muted,textAlign:"center",marginBottom:12}}>Dein Feedback verbessert die App für alle Bruderschafts-Mitglieder</div>
                   {!feedback?(
-                    <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-                      {[["worked","✅ Hat geklappt","rgba(46,204,113,.12)","rgba(46,204,113,.36)"],
-                        ["mixed","➡️ Teils teils","rgba(230,126,34,.12)","rgba(230,126,34,.36)"],
-                        ["failed","❌ Nicht geklappt","rgba(231,76,60,.12)","rgba(231,76,60,.36)"]].map(([type,label,bg,border])=>(
+                    <div style={{display:"flex",gap:7,justifyContent:"center",flexWrap:"wrap"}}>
+                      {[["worked","✅  Hat geklappt!","rgba(92,184,122,.12)","rgba(92,184,122,.35)"],
+                        ["mixed","➡️  Teils teils","rgba(230,126,34,.12)","rgba(230,126,34,.35)"],
+                        ["failed","❌  Nicht geklappt","rgba(224,92,106,.12)","rgba(224,92,106,.35)"]].map(([type,label,bg,border])=>(
                         <button key={type} className="fb" onClick={()=>markFeedback(type)}
-                          style={{background:bg,border:`1px solid ${border}`,color:"#F5F0E8",padding:"7px 12px",cursor:"pointer",borderRadius:3,fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700}}>{label}</button>
+                          style={{background:bg,border:`1px solid ${border}`,color:C.text,padding:"9px 16px",cursor:"pointer",borderRadius:20,fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700}}>{label}</button>
                       ))}
                     </div>
                   ):(
-                    <div style={{textAlign:"center",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:2,color:"#D4AF37"}}>
-                      {feedback==="worked"?"✅ Gespeichert!":feedback==="mixed"?"➡️ Notiert.":"❌ Notiert – nächste Analyse wird besser."}
+                    <div style={{textAlign:"center",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:2,color:C.rose2}}>
+                      {feedback==="worked"?"✅  Gespeichert – Community lernt daraus!":feedback==="mixed"?"➡️  Notiert.":"❌  Wichtiges Signal – nächste Analyse wird besser."}
                     </div>
                   )}
                 </div>
@@ -491,32 +557,32 @@ Nur valides JSON (keine Backticks):
         {/* ══ COMMUNITY TAB ══ */}
         {tab==="community"&&(
           <div style={{animation:"fadeUp .3s ease"}}>
-            <SLabel>🌐 COMMUNITY STATS</SLabel>
+            <SectionTitle icon="🌐" title="COMMUNITY STATS" subtitle="Gesammelte Erkenntnisse aus allen Analysen der Bruderschaft" C={C}/>
             {commStats&&(
               <>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:10}}>
-                  {[[commStats.total,"Analysen"],[commStats.worked,"Erfolge"],[commStats.rate+"%","Erfolgsrate"]].map(([v,l])=>(
-                    <div key={l} style={{background:"rgba(212,175,55,.05)",border:"1px solid rgba(212,175,55,.13)",borderRadius:4,padding:"11px 7px",textAlign:"center"}}>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#D4AF37",marginBottom:1}}>{v}</div>
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:"rgba(212,175,55,.36)",letterSpacing:1}}>{l.toUpperCase()}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7,marginBottom:12}}>
+                  {[[commStats.total,"Analysen",C.gold],[commStats.worked,"Erfolge",C.green],[commStats.rate+"%","Erfolgsrate",C.rose]].map(([v,l,col])=>(
+                    <div key={l} style={{background:`rgba(201,103,125,.04)`,border:`1px solid rgba(201,103,125,.15)`,borderRadius:10,padding:"13px 8px",textAlign:"center"}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:900,color:col,marginBottom:2}}>{v}</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:C.muted,letterSpacing:1}}>{l.toUpperCase()}</div>
                     </div>
                   ))}
                 </div>
                 {commStats.bestTone&&(
-                  <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.16)",borderRadius:4,padding:"9px 13px",marginBottom:12,textAlign:"center"}}>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.38)"}}>🏆 ERFOLGREICHSTER STIL · </span>
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:10,color:"#D4AF37",fontWeight:700}}>{commStats.bestTone.toUpperCase()}</span>
+                  <div style={{background:"rgba(212,175,55,.05)",border:`1px solid rgba(212,175,55,.18)`,borderRadius:8,padding:"10px 14px",marginBottom:14,textAlign:"center"}}>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.4)"}}>🏆 ERFOLGREICHSTER STIL · </span>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:C.gold,fontWeight:700}}>{commStats.bestTone.toUpperCase()}</span>
                   </div>
                 )}
               </>
             )}
-            {loadingComm?<Loading text="LADE…"/>:(
+            {loadingComm?<Loader text="LADE COMMUNITY-DATEN…" C={C}/>:(
               commInsights.map((ins,i)=>(
-                <div key={ins.id||i} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.09)",borderLeft:"2px solid #D4AF37",borderRadius:4,padding:"11px 13px",marginBottom:7}}>
-                  <Body>{ins.insight}</Body>
+                <div key={ins.id||i} style={{background:C.surface,border:`1px solid ${C.border}`,borderLeft:`2px solid ${C.rose}`,borderRadius:8,padding:"11px 14px",marginBottom:8}}>
+                  <Body C={C}>{ins.insight}</Body>
                   <div style={{display:"flex",justifyContent:"space-between"}}>
-                    {ins.category&&<Small>{ins.category.toUpperCase()}</Small>}
-                    <Small>👍 {ins.upvotes}</Small>
+                    {ins.category&&<Small C={C}>{ins.category.toUpperCase()}</Small>}
+                    <Small C={C}>👍 {ins.upvotes}</Small>
                   </div>
                 </div>
               ))
@@ -527,19 +593,19 @@ Nur valides JSON (keine Backticks):
         {/* ══ HISTORY TAB ══ */}
         {tab==="history"&&(
           <div style={{animation:"fadeUp .3s ease"}}>
-            <SLabel>📊 MEIN VERLAUF</SLabel>
-            {loadingHist?<Loading text="LADE…"/>:myHistory.length===0?(
-              <div style={{textAlign:"center",padding:"32px 0",color:"rgba(212,175,55,.22)",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3}}>NOCH KEINE ANALYSEN</div>
+            <SectionTitle icon="📊" title="MEIN VERLAUF" subtitle="Deine persönliche Analyse-Geschichte" C={C}/>
+            {loadingHist?<Loader text="LADE…" C={C}/>:myHistory.length===0?(
+              <div style={{textAlign:"center",padding:"36px 0",color:C.muted,fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3}}>NOCH KEINE ANALYSEN</div>
             ):myHistory.map((s,i)=>(
-              <div key={s.id||i} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.09)",borderRadius:4,padding:"11px 13px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div key={s.id||i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"12px 14px",marginBottom:7,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"#D4AF37",marginBottom:2}}>{s.vibe_score} · {s.dynamik}</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(245,240,232,.28)"}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:C.gold,marginBottom:2}}>{s.vibe_score} · {s.dynamik}</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:C.muted}}>
                     {new Date(s.created_at).toLocaleDateString("de-DE")} · {s.tone}{s.situation?` · ${s.situation}`:""}
                   </div>
-                  {s.used_label&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.32)",marginTop:1}}>Genutzt: {s.used_label}</div>}
+                  {s.used_label&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(201,103,125,.4)",marginTop:1}}>Genutzt: {s.used_label}</div>}
                 </div>
-                <div style={{fontSize:15}}>{s.feedback_type==="worked"?"✅":s.feedback_type==="failed"?"❌":s.feedback_type==="mixed"?"➡️":"⏳"}</div>
+                <div style={{fontSize:16}}>{s.feedback_type==="worked"?"✅":s.feedback_type==="failed"?"❌":s.feedback_type==="mixed"?"➡️":"⏳"}</div>
               </div>
             ))}
           </div>
@@ -548,30 +614,30 @@ Nur valides JSON (keine Backticks):
         {/* ══ TIPS TAB ══ */}
         {tab==="tips"&&(
           <div style={{animation:"fadeUp .3s ease"}}>
-            <SLabel>💡 KOMMUNIKATIONS-PRINZIPIEN</SLabel>
+            <SectionTitle icon="💡" title="KOMMUNIKATIONS-PRINZIPIEN" subtitle="Was wirklich funktioniert – basierend auf Psychologie und Community-Daten" C={C}/>
             {[
-              ["⚡","Kürze erzeugt Spannung","Weniger schreiben als sie. 5 Sätze → 2 Sätze. Leere erzeugt Neugier.","Reaktanz-Theorie: Menschen wollen mehr von dem was sie nicht vollständig haben."],
-              ["🔍","Echtes Interesse schlägt alles","Frag konkret nach etwas das sie gesagt hat. Zeige dass du wirklich zugehört hast.","Menschen spüren sofort ob Interesse echt oder performt ist."],
-              ["💬","Opener: Spezifisch statt generisch","'Wow schön' funktioniert nie. Beziehe dich auf etwas Konkretes aus ihrem Profil.","Spezifität signalisiert echtes Interesse – das unterscheidet dich von 90% der Männer."],
+              ["⚡","Kürze erzeugt Spannung","Weniger schreiben als sie. 5 Sätze → 2. Leere erzeugt Neugier.","Reaktanz-Theorie: Menschen wollen mehr von dem was sie nicht vollständig haben."],
+              ["💬","Opener: Spezifisch statt generisch","Beziehe dich konkret auf ihr Profil. 'Wow schön' geht nie.","Spezifität unterscheidet dich von 90% der Männer."],
               ["😄","Humor der verbindet","Selbstironie und gemeinsames Lachen. Nie auf ihre Kosten.","Lachen baut Oxytocin auf – denselben Stoff wie Umarmungen."],
-              ["🎯","Konkret statt vage","Nicht 'treffen wir uns' – sondern 'Dienstag 19 Uhr, Café XY'.","Konkrete Einladungen zeigen Selbstsicherheit. Vagheit = Unsicherheit."],
-              ["🌍","Sprich ihre Sprache","Antworte in der Sprache in der sie schreibt – zeigt Respekt und Aufmerksamkeit.","Sprachliche Anpassung baut unbewusst Vertrauen auf."],
-              ["⏰","Timing ist alles","Nicht immer sofort. 20-60 Min. Abstand zeigt: du hast ein Leben.","Konstante Sofortantworten senken deinen wahrgenommenen Wert."],
-              ["🚀","Der Move zur richtigen Zeit","Wenn der Vibe stimmt: Mach den Move. Zögern tötet Momentum.","Frauen wollen einen Mann der weiß was er will und es klar sagt."],
+              ["🎯","Konkret statt vage","Nicht 'treffen wir uns' – 'Dienstag 19 Uhr, Café XY'.","Konkrete Einladungen zeigen Selbstsicherheit."],
+              ["🌍","Sprich ihre Sprache","Antworte in der Sprache in der sie schreibt.","Sprachliche Anpassung baut unbewusst Vertrauen auf."],
+              ["⏰","Timing ist alles","20-60 Min. Abstand zeigt: du hast ein Leben.","Konstante Sofortantworten senken deinen wahrgenommenen Wert."],
+              ["🔍","Echtes Interesse schlägt alles","Frag konkret nach etwas das sie gesagt hat.","Menschen spüren sofort ob Interesse echt oder performt ist."],
+              ["🚀","Der Move zur richtigen Zeit","Wenn der Vibe stimmt: Mach den Move. Zögern tötet Momentum.","Entschlossenheit ist attraktiv."],
             ].map(([icon,title,desc,science])=>(
-              <div key={title} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.09)",borderLeft:"2px solid #D4AF37",borderRadius:4,padding:"12px 14px",marginBottom:7}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+              <div key={title} style={{background:C.surface,border:`1px solid ${C.border}`,borderLeft:`2px solid ${C.rose}`,borderRadius:8,padding:"12px 14px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
                   <span style={{fontSize:15}}>{icon}</span>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:700,color:"#D4AF37",letterSpacing:1}}>{title}</span>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:700,color:C.rose2,letterSpacing:1}}>{title}</span>
                 </div>
-                <Body>{desc}</Body>
-                <Small>🔬 {science}</Small>
+                <Body C={C}>{desc}</Body>
+                <Small C={C}>🔬 {science}</Small>
               </div>
             ))}
           </div>
         )}
 
-        <div style={{textAlign:"center",marginTop:24,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:5,color:"rgba(212,175,55,.11)"}}>
+        <div style={{textAlign:"center",marginTop:28,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:5,color:"rgba(201,103,125,.15)"}}>
           MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN · {localMem.totalOpeners||0} OPENER
         </div>
       </div>
@@ -579,10 +645,44 @@ Nur valides JSON (keine Backticks):
   );
 }
 
-function Stat({val,label}){return(<div style={{textAlign:"center"}}><span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:"#D4AF37"}}>{val}</span><span style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:"rgba(212,175,55,.32)",letterSpacing:1,marginLeft:3}}>{label.toUpperCase()}</span></div>);}
-function SLabel({children,small,style}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:small?7:8,letterSpacing:4,color:"rgba(212,175,55,.36)",marginBottom:small?4:8,textTransform:"uppercase",...style}}>{children}</div>;}
-function Card({children,borderLeft,flex,style}){return <div style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(212,175,55,.09)",borderLeft:borderLeft?`3px solid ${borderLeft}`:"1px solid rgba(212,175,55,.09)",borderRadius:4,padding:"11px 13px",marginBottom:7,flex:flex?1:undefined,...style}}>{children}</div>;}
-function Body({children}){return <p style={{fontFamily:"'Lato',sans-serif",color:"rgba(245,240,232,.66)",fontSize:13,lineHeight:1.72,margin:"0 0 3px"}}>{children}</p>;}
-function Small({children}){return <p style={{fontFamily:"'Lato',sans-serif",color:"rgba(245,240,232,.32)",fontSize:10,lineHeight:1.5,margin:"1px 0 2px",fontStyle:"italic"}}>{children}</p>;}
-function Loading({text}){return(<div style={{textAlign:"center",padding:"18px 0"}}><div style={{width:32,height:32,margin:"0 auto 9px",border:"2px solid rgba(212,175,55,.12)",borderTopColor:"#D4AF37",borderRadius:"50%",animation:"spin 1s linear infinite"}}/><div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:4,color:"rgba(212,175,55,.34)",animation:"pulse 1.5s ease infinite"}}>{text}</div></div>);}
-function ErrBox({children}){return <div style={{background:"rgba(180,30,30,.1)",border:"1px solid rgba(180,30,30,.24)",borderRadius:4,padding:"9px 13px",color:"#ff6b6b",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:12}}>{children}</div>;}
+// ─── HELPER COMPONENTS ───────────────────────────────────────────────────────
+function StatBadge({val,label,color}){return(<div style={{textAlign:"center"}}><span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color}}>{val}</span><span style={{fontFamily:"'Lato',sans-serif",fontSize:7,color:"rgba(240,232,236,.3)",letterSpacing:1,marginLeft:4}}>{label.toUpperCase()}</span></div>);}
+
+function SectionTitle({icon,title,subtitle,C}){return(
+  <div style={{marginBottom:18}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+      <span style={{fontSize:16}}>{icon}</span>
+      <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:C.rose2,letterSpacing:2}}>{title}</span>
+    </div>
+    <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:C.muted,lineHeight:1.6,paddingLeft:24}}>{subtitle}</div>
+    <div style={{height:1,background:`linear-gradient(90deg,rgba(201,103,125,.3),rgba(212,175,55,.2),transparent)`,marginTop:10}}/>
+  </div>
+);}
+
+function SLabel({children,C,style}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(201,103,125,.4)",marginBottom:9,textTransform:"uppercase",...style}}>{children}</div>;}
+
+function RoseGoldButton({children,onClick,disabled,C}){return(
+  <button className="gb" onClick={onClick} disabled={disabled}
+    style={{width:"100%",background:disabled?"rgba(201,103,125,.07)":"linear-gradient(135deg,#8B6914 0%,#c9677d 30%,#D4AF37 50%,#c9677d 70%,#8B6914 100%)",backgroundSize:"200% auto",border:"none",borderRadius:10,padding:"15px",color:disabled?"rgba(201,103,125,.25)":"#fff",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:disabled?"not-allowed":"pointer",marginBottom:18,animation:disabled?"none":"shimmer 3s linear infinite",boxShadow:disabled?"none":"0 4px 20px rgba(201,103,125,.3)",textShadow:disabled?"none":"0 1px 3px rgba(0,0,0,.4)"}}>
+    {children}
+  </button>
+);}
+
+function InfoCard({icon,label,borderColor,children,small,C}){return(
+  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderLeft:`3px solid ${borderColor||C.gold}`,borderRadius:8,padding:small?"10px 12px":"12px 14px",marginBottom:9}}>
+    <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(201,103,125,.4)",marginBottom:small?5:8}}>{icon} {label}</div>
+    {children}
+  </div>
+);}
+
+function ScoreCard({label,value,color,C,right}){return(
+  <div style={{flex:1,background:"rgba(201,103,125,.04)",border:`1px solid rgba(201,103,125,.15)`,borderRadius:8,padding:"13px 14px",textAlign:right?"right":"left"}}>
+    <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(201,103,125,.38)",marginBottom:4}}>{label}</div>
+    <div style={{fontFamily:"'Cinzel',serif",fontSize:22,fontWeight:900,color,textShadow:`0 0 14px ${color}44`}}>{value}</div>
+  </div>
+);}
+
+function Body({children,C}){return <p style={{fontFamily:"'Lato',sans-serif",color:"rgba(240,232,236,.7)",fontSize:13,lineHeight:1.75,margin:"0 0 3px"}}>{children}</p>;}
+function Small({children,C}){return <p style={{fontFamily:"'Lato',sans-serif",color:"rgba(240,232,236,.35)",fontSize:10,lineHeight:1.5,margin:"1px 0 2px",fontStyle:"italic"}}>{children}</p>;}
+function Loader({text,C}){return(<div style={{textAlign:"center",padding:"20px 0"}}><div style={{width:34,height:34,margin:"0 auto 10px",border:"2px solid rgba(201,103,125,.12)",borderTopColor:"#c9677d",borderRadius:"50%",animation:"spin 1s linear infinite"}}/><div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(201,103,125,.38)",animation:"pulse 1.5s ease infinite"}}>{text}</div></div>);}
+function ErrBox({children,C}){return <div style={{background:"rgba(224,92,106,.08)",border:"1px solid rgba(224,92,106,.24)",borderRadius:8,padding:"10px 14px",color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:14}}>{children}</div>;}
