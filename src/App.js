@@ -974,13 +974,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         })()}
                         {/* Left arrow */}
                         {imgs.length>1&&carouselIdx>0&&(
-                          <button onClick={()=>setCarouselIdx(i=>i-1)}
-                            style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.55)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>‹</button>
+                          <button onClick={e=>{e.stopPropagation();setCarouselIdx(i=>i-1);}}
+                            style={{position:"absolute",left:10,bottom:"10%",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.2)",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)",zIndex:10}}>‹</button>
                         )}
                         {/* Right arrow */}
                         {imgs.length>1&&carouselIdx<imgs.length-1&&(
-                          <button onClick={()=>setCarouselIdx(i=>i+1)}
-                            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.55)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>›</button>
+                          <button onClick={e=>{e.stopPropagation();setCarouselIdx(i=>i+1);}}
+                            style={{position:"absolute",right:10,bottom:"10%",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.2)",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)",zIndex:10}}>›</button>
                         )}
                         {/* Counter top right */}
                         {imgs.length>1&&(
@@ -1200,9 +1200,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               }}/>
               {/* Arrows */}
               {modalIdx>0&&<button onClick={()=>setModalIdx(i=>i-1)}
-                style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>‹</button>}
+                style={{position:"absolute",left:12,bottom:"12%",background:"rgba(0,0,0,.65)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>‹</button>}
               {modalIdx<imgs.length-1&&<button onClick={()=>setModalIdx(i=>i+1)}
-                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.6)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>›</button>}
+                style={{position:"absolute",right:12,bottom:"12%",background:"rgba(0,0,0,.65)",border:"1px solid rgba(212,175,55,.3)",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>›</button>}
             </div>
             {/* Dots */}
             {imgs.length>1&&(
