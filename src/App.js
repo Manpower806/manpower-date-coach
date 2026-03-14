@@ -955,7 +955,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                             objectFit:"cover",objectPosition:"center",display:"block",zIndex:2,
                             mixBlendMode:blendActive?"screen":"normal",
                             filter:blendActive
-                              ?"brightness(1.3) contrast(1.2) drop-shadow(0px 0px 6px rgba(255,255,255,0.8)) drop-shadow(0px 2px 4px rgba(0,0,0,1))"
+                              ?"brightness(1.4) contrast(1.3) drop-shadow(0px 0px 3px #000) drop-shadow(0px 0px 6px #000) drop-shadow(0px 0px 12px #000) drop-shadow(2px 2px 0px #000) drop-shadow(-2px -2px 0px #000) drop-shadow(2px -2px 0px #000) drop-shadow(-2px 2px 0px #000)"
                               :"none"
                           }}/>;
                         })()}
