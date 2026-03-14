@@ -154,6 +154,7 @@ export default function App({ user, onLogout }) {
   const bibleImageRef = useRef();
   const bibleBgRef = useRef();
   const [carouselIdx, setCarouselIdx] = useState(0);
+  const touchStartX = useRef(null);
 
   useEffect(()=>{
     if(mainTab==="bible") loadBible();
@@ -921,20 +922,43 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   return (
                     <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
                       {/* Main image */}
-                      <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)"}}>
+                      <div
+                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)"}}
+                        onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; }}
+                        onTouchEnd={e=>{
+                          if(touchStartX.current===null) return;
+                          const diff = touchStartX.current - e.changedTouches[0].clientX;
+                          if(Math.abs(diff)>40){
+                            if(diff>0 && carouselIdx<imgs.length-1) setCarouselIdx(i=>i+1);
+                            if(diff<0 && carouselIdx>0) setCarouselIdx(i=>i-1);
+                          }
+                          touchStartX.current=null;
+                        }}
+                      >
                         {/* Background layer - shown when blend mode is active */}
                         {(()=>{
                           try{
                             const bm=JSON.parse(selectedEntry?.blend_modes||"[]");
                             const bgImg=selectedEntry?.bg_image;
                             if(bm[carouselIdx]&&bgImg){
-                              return <img src={bgImg} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",zIndex:1}}/>;
+                              return <img src={bgImg} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",display:"block",zIndex:1}}/>;
                             }
                           }catch{}
                           return null;
                         })()}
-                        {/* Text/content image layer */}
-                        <img src={imgs[carouselIdx]} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block",zIndex:2,mixBlendMode:(()=>{try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");return bm[carouselIdx]?"screen":"normal";}catch{return "normal";}})()}}/>
+                        {/* Text/content image layer with enhanced text visibility */}
+                        {(()=>{
+                          let blendActive=false;
+                          try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");blendActive=!!bm[carouselIdx];}catch{}
+                          return <img src={imgs[carouselIdx]} alt="" style={{
+                            position:"absolute",inset:0,width:"100%",height:"100%",
+                            objectFit:"cover",objectPosition:"center",display:"block",zIndex:2,
+                            mixBlendMode:blendActive?"screen":"normal",
+                            filter:blendActive
+                              ?"brightness(1.3) contrast(1.2) drop-shadow(0px 0px 6px rgba(255,255,255,0.8)) drop-shadow(0px 2px 4px rgba(0,0,0,1))"
+                              :"none"
+                          }}/>;
+                        })()}
                         {/* Left arrow */}
                         {imgs.length>1&&carouselIdx>0&&(
                           <button onClick={()=>setCarouselIdx(i=>i-1)}
