@@ -330,7 +330,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               onDragLeave={()=>setOpenerDrag(false)}
               onDrop={onProfileDrop}>
               <div style={{fontSize:28,marginBottom:8,opacity:.55}}>📸</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:2,color:G.gold,marginBottom:4}}>Profilbilder einwerfen</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:2,color:G.gold,marginBottom:4}}>Profilbilder hinzufügen</div>
               <div style={{fontFamily:"'Lato',sans-serif",color:G.muted,fontSize:11}}>Bio · Fotos · Hobbys – alles hilft der KI</div>
             </div>
             <input ref={profileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>await handleProfileFiles(e.target.files)}/>
@@ -418,7 +418,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               ):(
                 <>
                   <div style={{fontSize:26,marginBottom:9,opacity:.5}}>📸</div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:2,color:G.gold,marginBottom:4}}>Chat-Screenshot einwerfen</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:2,color:G.gold,marginBottom:4}}>Chat-Screenshot hinzufügen</div>
                   <div style={{fontFamily:"'Lato',sans-serif",color:G.muted,fontSize:11}}>Drag & Drop oder <span style={{color:G.gold}}>auswählen</span></div>
                 </>
               )}
