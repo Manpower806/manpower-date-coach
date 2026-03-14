@@ -63,17 +63,17 @@ function fileToB64(file, maxWidth=1200, quality=0.72) {
 // Upload dataUrl to Supabase Storage and return public URL
 async function uploadDataUrlToStorage(supabaseClient, dataUrl, folder="images") {
   const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  // Compress dataUrl via canvas
+  // Compress aggressively for mobile
   const blob = await new Promise(res=>{
     const img = new Image();
     img.onload = ()=>{
       const c = document.createElement("canvas");
       let w=img.width, h=img.height;
-      const maxW=1080;
+      const maxW=800; // reduced from 1080
       if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
       c.width=w; c.height=h;
       c.getContext("2d").drawImage(img,0,0,w,h);
-      c.toBlob(b=>res(b),"image/jpeg",0.75);
+      c.toBlob(b=>res(b),"image/jpeg",0.65); // reduced from 0.75
     };
     img.src=dataUrl;
   });
@@ -163,7 +163,31 @@ export default function App({ user, onLogout }) {
   const [newMusicEnd, setNewMusicEnd] = useState(0);
   const [previewingMusic, setPreviewingMusic] = useState(false);
   const audioRef = useRef(null);
-  const [musicFiles, setMusicFiles] = useState(()=>{ try{return JSON.parse(localStorage.getItem("mp_music_files")||"[]");}catch{return [];} });
+  const [musicFiles, setMusicFiles] = useState([]);
+  const [loadingMusic, setLoadingMusic] = useState(false);
+
+  // Auto-fetch MP3 files from GitHub repo
+  useEffect(()=>{
+    const fetchMusicFiles = async()=>{
+      setLoadingMusic(true);
+      try {
+        // Fetch from GitHub API to list public folder
+        const res = await fetch("https://api.github.com/repos/Manpower806/manpower-date-coach/contents/public");
+        const files = await res.json();
+        if(Array.isArray(files)){
+          const mp3s = files
+            .filter(f=>f.name.endsWith(".mp3"))
+            .map(f=>({file:f.name, name:f.name.replace(".mp3","").replace(/_/g," ")}));
+          setMusicFiles(mp3s);
+        }
+      } catch(e){
+        // Fallback to localStorage
+        try{setMusicFiles(JSON.parse(localStorage.getItem("mp_music_files")||"[]"));}catch{}
+      }
+      setLoadingMusic(false);
+    };
+    fetchMusicFiles();
+  },[]);
   const touchStartX = useRef(null);
 
   useEffect(()=>{
@@ -242,7 +266,9 @@ export default function App({ user, onLogout }) {
     try {
       const imageUrls = [];
       for(let i=0; i<newImages.length; i++){
-        setSaveStatus(`BILD ${i+1} VON ${newImages.length}…`);
+        setSaveStatus(`BILD ${i+1} VON ${newImages.length} WIRD HOCHGELADEN…`);
+        // Small delay to prevent freezing on mobile
+        await new Promise(r=>setTimeout(r,100));
         const url = await uploadDataUrlToStorage(supabase, newImages[i].dataUrl, "images");
         imageUrls.push(url);
       }
@@ -486,10 +512,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:10}}>BRUDERSCHAFT</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"} {user?.username?.toUpperCase()}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",borderRadius:20,padding:"5px 14px"}}>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 12px rgba(212,175,55,.5)"}}>{isAdmin?"👑":"👤"}</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:G.gold,letterSpacing:2,textShadow:"0 0 12px rgba(212,175,55,.5)"}}>{user?.username?.toUpperCase()}</span>
+            </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
-            <button className="mgbtn" onClick={onLogout} style={{background:"linear-gradient(135deg,#3d2800,#7a5500,#D4AF37,#F5E27A,#D4AF37,#7a5500,#3d2800)",backgroundSize:"250% auto",border:"none",borderRadius:14,padding:"5px 12px",color:"#1a0d00",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:7,letterSpacing:2,cursor:"pointer",animation:"shimmer 3s linear infinite",boxShadow:"0 2px 10px rgba(212,175,55,.3)",textShadow:"0 1px 2px rgba(0,0,0,.4)"}}>🚪 LOGOUT</button>
+            <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"5px 11px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:16,transition:"all .2s"}}>🚪</button>
           </div>
         </header>
 
@@ -931,7 +960,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
                   musicStart={newMusicStart} setMusicStart={setNewMusicStart}
                   musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
-                  MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin}
+                  MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin} loadingMusic={loadingMusic}
                 />
 
                 <div style={{display:"flex",gap:8}}>
@@ -1142,7 +1171,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         musicUrl={newMusicUrl} setMusicUrl={setNewMusicUrl}
                         musicStart={newMusicStart} setMusicStart={setNewMusicStart}
                         musicEnd={newMusicEnd} setMusicEnd={setNewMusicEnd}
-                        MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin}
+                        MUSIC_FILES={musicFiles} setMusicFiles={f=>{setMusicFiles(f);localStorage.setItem("mp_music_files",JSON.stringify(f));}} G={G} gc={gc} isAdmin={isAdmin} loadingMusic={loadingMusic}
                       />
                       <div style={{display:"flex",gap:8}}>
                         <MBtn onClick={saveEdit} disabled={savingPost}>
@@ -1221,7 +1250,6 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               modalTouchX.current=null;
             }}
             onClick={e=>{
-              // Close when tapping background (not on image/buttons)
               if(e.target===e.currentTarget) setModalOpen(false);
             }}>
             {/* Header */}
@@ -1318,7 +1346,7 @@ function Spin({text}){return(
 function Err({children}){return <div style={{background:"rgba(224,92,106,.08)",border:"1px solid rgba(224,92,106,.22)",borderRadius:8,padding:"9px 12px",color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:12}}>{children}</div>;}
 
 // ── MUSIC PICKER COMPONENT ───────────────────────────────────────────────────
-function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,setMusicEnd,MUSIC_FILES,setMusicFiles,G,gc,isAdmin}){
+function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,setMusicEnd,MUSIC_FILES,setMusicFiles,G,gc,isAdmin,loadingMusic}){
   const [preview, setPreview] = useState(null);
   const [newFileName, setNewFileName] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
@@ -1354,47 +1382,35 @@ function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,set
         <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:G.gold}}>MUSIK FÜR DIESEN BEITRAG</span>
       </div>
 
-      {/* Admin: Add music files */}
+      {/* Info for admin */}
       {isAdmin&&(
-        <div style={{marginBottom:12,padding:"10px",background:"rgba(212,175,55,.05)",borderRadius:8,border:"1px solid rgba(212,175,55,.15)"}}>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:7}}>👑 MUSIK HINZUFÜGEN</div>
-          <input value={newFileName} onChange={e=>setNewFileName(e.target.value)}
-            placeholder="Dateiname z.B. drake_gods_plan.mp3"
-            style={{...gc,width:"100%",padding:"7px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:5,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.15)"}}/>
-          <input value={newDisplayName} onChange={e=>setNewDisplayName(e.target.value)}
-            placeholder="Anzeigename z.B. Drake - God's Plan"
-            style={{...gc,width:"100%",padding:"7px 10px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:7,background:"rgba(3,2,1,.6)",borderColor:"rgba(212,175,55,.15)"}}/>
-          <button onClick={addFile}
-            style={{width:"100%",background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:G.gold,padding:"7px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2}}>
-            + HINZUFÜGEN
-          </button>
+        <div style={{marginBottom:10,padding:"8px 10px",background:"rgba(212,175,55,.05)",borderRadius:8,border:"1px solid rgba(212,175,55,.12)"}}>
+          <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.45)"}}>
+            👑 MP3 Dateien in GitHub → public Ordner hochladen → automatisch hier sichtbar
+          </div>
         </div>
       )}
 
-      {/* Song list */}
-      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:5}}>SONG WÄHLEN</div>
-      <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>
-        <div onClick={()=>setMusicUrl("")}
-          style={{...gc,padding:"8px 11px",cursor:"pointer",background:!musicUrl?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",borderColor:!musicUrl?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
-          <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:!musicUrl?G.gold:G.muted}}>🔇 Keine Musik</span>
+      {/* Song dropdown */}
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.muted,marginBottom:6}}>SONG WÄHLEN</div>
+      {loadingMusic?(
+        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:G.muted,padding:"8px",textAlign:"center"}}>🎵 Lade Songs…</div>
+      ):(
+        <select value={musicUrl||""} onChange={e=>setMusicUrl(e.target.value)}
+          style={{width:"100%",padding:"10px 12px",background:"rgba(3,2,1,.7)",border:"1px solid rgba(212,175,55,.25)",borderRadius:8,color:musicUrl?G.gold:G.muted,fontFamily:"'Lato',sans-serif",fontSize:13,cursor:"pointer",marginBottom:10,WebkitAppearance:"none",outline:"none"}}>
+          <option value="" style={{background:"#0a0600",color:"#888"}}>🔇 Keine Musik</option>
+          {MUSIC_FILES.map((f,i)=>{
+            const file=typeof f==="object"?f.file:f;
+            const name=typeof f==="object"?f.name:f;
+            return <option key={i} value={file} style={{background:"#0a0600",color:"#D4AF37"}}>🎵 {name}</option>;
+          })}
+        </select>
+      )}
+      {MUSIC_FILES.length===0&&!loadingMusic&&(
+        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:G.muted,marginBottom:8,textAlign:"center"}}>
+          Keine MP3s gefunden – lade MP3 Dateien in GitHub → public Ordner hoch
         </div>
-        {MUSIC_FILES.map((f,i)=>{
-          const file=typeof f==="object"?f.file:f;
-          const name=typeof f==="object"?f.name:f;
-          return(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
-              <div onClick={()=>setMusicUrl(file)} style={{...gc,flex:1,padding:"8px 11px",cursor:"pointer",
-                background:musicUrl===file?"rgba(212,175,55,.12)":"rgba(3,2,1,.5)",
-                borderColor:musicUrl===file?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}}>
-                <span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:musicUrl===file?G.gold:G.muted}}>🎵 {name}</span>
-              </div>
-              {isAdmin&&<button onClick={()=>removeFile(i)}
-                style={{background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.25)",color:"#ff8a95",width:28,height:28,borderRadius:"50%",cursor:"pointer",fontSize:10,flexShrink:0}}>✕</button>}
-            </div>
-          );
-        })}
-        {MUSIC_FILES.length===0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:G.muted,padding:"8px",textAlign:"center"}}>Noch keine Musik hinzugefügt</div>}
-      </div>
+      )}
 
       {musicUrl&&(
         <>
