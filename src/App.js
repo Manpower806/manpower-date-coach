@@ -512,13 +512,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:10}}>BRUDERSCHAFT</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",borderRadius:20,padding:"5px 14px"}}>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 12px rgba(212,175,55,.5)"}}>{isAdmin?"👑":"👤"}</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:G.gold,letterSpacing:2,textShadow:"0 0 12px rgba(212,175,55,.5)"}}>{user?.username?.toUpperCase()}</span>
+            <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px"}}>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"}</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:2,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{user?.username?.toUpperCase()}</span>
             </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
-            <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"5px 11px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:16,transition:"all .2s"}}>🚪</button>
+            <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>
 
