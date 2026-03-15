@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "./supabaseClient";
 
 // Generate or get persistent device ID
@@ -16,64 +16,7 @@ function genToken() {
   return "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2);
 }
 
-function MatrixCanvas() {
-  const canvasRef = useRef(null);
-  useEffect(()=>{
-    const canvas = canvasRef.current;
-    if(!canvas) return;
-    const ctx = canvas.getContext("2d");
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const words = ["MANPOWER","BROTHERHOOD","ELITE","POWER","STRENGTH","ALPHA","DOMINANCE","STOIC","SIGMA"];
-    const SPEED = 1.5;        // all columns same speed
-    const FONT_SIZE = 12;
-    const COL_WIDTH = 100;
-    const cols = Math.floor(canvas.width / COL_WIDTH);
-
-    // All columns start at different y positions so screen fills immediately
-    const columns = Array.from({length: cols}, (_, i) => ({
-      x: i * COL_WIDTH + COL_WIDTH / 2,
-      y: Math.floor(Math.random() * (canvas.height / FONT_SIZE)) * FONT_SIZE,
-      wordIdx: Math.floor(Math.random() * words.length),
-    }));
-
-    let frame = 0;
-    let animId;
-
-    const draw = () => {
-      frame++;
-      // Only move every 3 frames → smooth but not jittery
-      if (frame % 3 !== 0) { animId = requestAnimationFrame(draw); return; }
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.textAlign = "center";
-
-      columns.forEach(col => {
-        ctx.font = `700 ${FONT_SIZE}px Cinzel, serif`;
-        ctx.fillStyle = "rgba(212,175,55,0.75)";
-        ctx.shadowColor = "rgba(212,175,55,0.5)";
-        ctx.shadowBlur = 4;
-        ctx.fillText(words[col.wordIdx], col.x, col.y);
-        ctx.shadowBlur = 0;
-
-        col.y += FONT_SIZE * 1.8; // step down one word-height
-
-        if (col.y > canvas.height + FONT_SIZE) {
-          col.y = -FONT_SIZE;
-          col.wordIdx = Math.floor(Math.random() * words.length);
-        }
-      });
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    animId = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animId);
-  }, []);
-  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.18}}/>;
-}
 
 const LANGS = {
   de: { cc:"de", label:"DE", name:"Deutsch", user:"BENUTZERNAME", pass:"PASSWORT", ph_user:"dein-name", ph_pass:"••••••••", btn:"LOG IN", checking:"WIRD GEPRÜFT…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Bitte alles ausfüllen.", err_wrong:"Falscher Benutzername oder Passwort.", err_inactive:"Dein Zugang wurde deaktiviert. Kontaktiere den Admin.", err_expired:"Dein Zugang ist abgelaufen. Kontaktiere den Admin.", err_device:"Dieser Account ist an ein anderes Gerät gebunden. Kontaktiere den Admin." },
@@ -187,9 +130,7 @@ export default function Login({ onLogin }) {
         @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes flicker{0%,100%{opacity:1}92%{opacity:.95}96%{opacity:.85}}
-        @keyframes matrixRise{0%{transform:translateY(110vh);opacity:0}5%{opacity:1}80%{opacity:.7}100%{transform:translateY(-10vh);opacity:0}}
-        @keyframes matrixFade{0%,100%{opacity:0.05}50%{opacity:1}}
-        @keyframes matrixGlitch{0%,95%,100%{opacity:1;transform:skewX(0)}96%{opacity:.8;transform:skewX(-2deg)}97%{opacity:.9;transform:skewX(1deg)}}
+        @keyframes particleFloat{0%{transform:translateY(0);opacity:0}10%{opacity:1}90%{opacity:.4}100%{transform:translateY(-105vh);opacity:0}}
         *{box-sizing:border-box;} input{outline:none;}
         .linput:focus{border-color:#D4AF37!important;box-shadow:0 0 12px rgba(212,175,55,.15)!important;}
         .lbtn:not(:disabled):hover{transform:translateY(-3px)!important;box-shadow:0 14px 40px rgba(212,175,55,.45)!important;}
@@ -198,8 +139,21 @@ export default function Login({ onLogin }) {
 
       <div style={{ position:"fixed",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 30%,rgba(180,120,40,.18) 0%,rgba(120,60,10,.12) 40%,transparent 70%)",pointerEvents:"none" }}/>
       <div style={{ position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px)",pointerEvents:"none" }}/>
-      {/* Matrix Canvas Background */}
-      <MatrixCanvas />
+      {[...Array(18)].map((_,i)=>(
+        <div key={i} style={{
+          position:"fixed",
+          left:`${4+i*5.5}%`,
+          bottom:"-5%",
+          width: i%3===0?3:i%3===1?2:1.5,
+          height: i%3===0?3:i%3===1?2:1.5,
+          background:`rgba(212,175,55,${i%2===0?0.7:0.45})`,
+          borderRadius:"50%",
+          boxShadow: i%3===0?"0 0 6px rgba(212,175,55,.8)":i%3===1?"0 0 4px rgba(212,175,55,.5)":"none",
+          animation:`particleFloat ${8+i*1.1}s ${i*0.7}s infinite linear`,
+          pointerEvents:"none",
+          zIndex:0
+        }}/>
+      ))}
 
       <div style={{ position:"relative",zIndex:1,width:"100%",maxWidth:420,margin:"0 auto",padding:"0 20px",animation:"fadeIn .6s ease" }}>
         {/* Logo */}
