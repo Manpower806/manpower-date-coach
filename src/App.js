@@ -191,17 +191,18 @@ export default function App({ user, onLogout }) {
     const fetchMusicFiles = async()=>{
       setLoadingMusic(true);
       const allSongs = [];
-      // 1. Supabase Storage bucket "music"
+      // 1. Supabase Storage bucket "music" - direkte URL-Konstruktion als Fallback
       try {
-        const {data:storageFiles, error:storageErr} = await supabase.storage.from("music").list("",{limit:100,sortBy:{column:"name",order:"asc"}});
-        if(!storageErr && storageFiles?.length){
+        const {data:storageFiles, error:storageErr} = await supabase.storage.from("music").list("",{limit:100});
+        if(storageFiles?.length){
           for(const f of storageFiles){
+            if(!f.name || f.name===".emptyFolderPlaceholder") continue;
             const lname = f.name.toLowerCase();
             if(!lname.endsWith(".mp3") && !lname.endsWith(".m4a") && !lname.endsWith(".wav")) continue;
-            const {data:urlData} = supabase.storage.from("music").getPublicUrl(f.name);
-            if(urlData?.publicUrl){
-              allSongs.push({file:urlData.publicUrl, name:f.name.replace(/\.[^.]+$/,"").replace(/_/g," ")});
-            }
+            // Direkte URL-Konstruktion (funktioniert auch ohne RLS)
+            const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/music/${encodeURIComponent(f.name)}`;
+            allSongs.push({file:publicUrl, name:f.name.replace(/\.[^.]+$/,"").replace(/_/g," ").replace(/%20/g," ")});
           }
         }
       } catch(e){ console.warn("Supabase music fetch failed:",e); }
@@ -1599,8 +1600,9 @@ function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,set
     a.currentTime=musicStart||0; a.volume=0.7;
     const end=musicEnd||0;
     if(end>0){ a.ontimeupdate=()=>{ if(a.currentTime>=end){a.pause();setPreview(null);} }; }
+    a.onerror=()=>{ alert("⚠️ Song konnte nicht geladen werden. Prüfe ob die Datei im Supabase Storage public ist."); setPreview(null); };
     a.onended=()=>setPreview(null);
-    a.play().catch(()=>{});
+    a.play().catch(err=>{ console.error("Preview error:",err); });
     setPreview(a);
   };
 
