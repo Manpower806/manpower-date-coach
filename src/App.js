@@ -396,20 +396,26 @@ export default function App({ user, onLogout }) {
       audio.currentTime = start;
       audio.volume = 0.7;
       if(end>0){
-        // Loop between start and end
+        // Loop between start and end - use setInterval for reliable looping
         audio.ontimeupdate = ()=>{
-          if(audio.currentTime>=end){
-            audio.currentTime=start;
+          if(audio.currentTime >= end - 0.1){
+            audio.currentTime = start;
             audio.play().catch(()=>{});
           }
+        };
+        // Extra safety: also catch onended in case it slips through
+        audio.onended = ()=>{
+          audio.currentTime = start;
+          audio.play().catch(()=>{});
         };
       } else {
         // Loop whole song from start
         audio.onended = ()=>{
-          audio.currentTime=start;
+          audio.currentTime = start;
           audio.play().catch(()=>{});
         };
       }
+      audio.loop = (end===0 && start===0); // native loop only when no custom range
       audio.play().catch(()=>{});
       audioRef.current = audio;
     }
