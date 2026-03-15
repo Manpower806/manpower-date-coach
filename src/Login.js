@@ -26,43 +26,60 @@ function MatrixCanvas() {
     resize();
     window.addEventListener("resize", resize);
 
-    const words = ["MANPOWER","BROTHERHOOD","ELITE","POWER","STRENGTH","ALPHA","DOMINANCE","STOIC","SIGMA","M"];
+    const words = ["MANPOWER","BROTHERHOOD","ELITE","POWER","STRENGTH","ALPHA","DOMINANCE","STOIC","SIGMA"];
     const fontSize = 11;
-    const cols = Math.floor(window.innerWidth / (fontSize * 7));
-    const drops = Array(cols).fill(0).map(()=>-Math.random()*50);
-    const wordIndices = Array(cols).fill(0).map(()=>Math.floor(Math.random()*words.length));
+    const colWidth = 90; // wider columns = fewer, no overlap
+    const cols = Math.floor(window.innerWidth / colWidth);
 
+    // Each column: independent y position, speed, word - staggered start
+    const columns = Array(cols).fill(0).map((_, i) => ({
+      y: -(Math.random() * canvas.height * 1.5), // start well above, staggered
+      speed: 0.4 + Math.random() * 0.3,          // slow: 0.4–0.7 px per frame
+      wordIdx: Math.floor(Math.random() * words.length),
+      x: i * colWidth + 10,
+    }));
+
+    let animId;
     const draw = ()=>{
-      ctx.fillStyle = "rgba(8,6,4,0.15)";
+      ctx.fillStyle = "rgba(8,6,4,0.04)";
       ctx.fillRect(0,0,canvas.width,canvas.height);
-      for(let i=0;i<drops.length;i++){
-        const word = words[wordIndices[i]];
-        const y = drops[i]*fontSize;
-        // Bright leading word
-        ctx.font = `900 ${fontSize}px Cinzel, serif`;
-        ctx.fillStyle = `rgba(245,226,122,0.9)`;
-        ctx.shadowColor = "rgba(212,175,55,0.5)";
-        ctx.shadowBlur = 4;
-        ctx.fillText(word, i*(fontSize*7), y);
-        // Trail words dimmer
+
+      columns.forEach(col => {
+        const word = words[col.wordIdx];
+        const y = col.y;
+
+        // Leading word - bright
+        ctx.font = `700 ${fontSize}px Cinzel, serif`;
+        ctx.fillStyle = "rgba(245,226,122,0.85)";
+        ctx.shadowColor = "rgba(212,175,55,0.6)";
+        ctx.shadowBlur = 6;
+        ctx.fillText(word, col.x, y);
+
+        // Trail - 4 fading words above
         ctx.shadowBlur = 0;
-        for(let t=1;t<=3;t++){
-          const alpha = 0.35-(t*0.1);
+        const trailAlphas = [0.45, 0.28, 0.15, 0.07];
+        trailAlphas.forEach((alpha, t) => {
           ctx.fillStyle = `rgba(212,175,55,${alpha})`;
-          ctx.font = `400 ${fontSize-1}px Cinzel, serif`;
-          ctx.fillText(words[(wordIndices[i]+t)%words.length], i*(fontSize*7), y-(t*fontSize*1.8));
+          ctx.font = `400 ${fontSize}px Cinzel, serif`;
+          ctx.fillText(words[(col.wordIdx + t + 1) % words.length], col.x, y - (t+1) * fontSize * 2.2);
+        });
+
+        col.y += col.speed;
+
+        // Reset when fully off screen bottom
+        if(col.y > canvas.height + fontSize * 12) {
+          col.y = -fontSize * (10 + Math.random() * 20); // restart above screen
+          col.wordIdx = Math.floor(Math.random() * words.length);
+          col.speed = 0.4 + Math.random() * 0.3;
         }
-        drops[i]++;
-        if(drops[i]*fontSize > canvas.height && Math.random()>0.97){
-          drops[i]=0;
-          wordIndices[i]=Math.floor(Math.random()*words.length);
-        }
-      }
+      });
+
+      animId = requestAnimationFrame(draw);
     };
-    const interval = setInterval(draw, 60);
-    return ()=>{ clearInterval(interval); window.removeEventListener("resize",resize); };
+    animId = requestAnimationFrame(draw);
+    return ()=>{ cancelAnimationFrame(animId); window.removeEventListener("resize",resize); };
   },[]);
-  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.18}}/>;
+  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.2}}/>;
 }
 
 const LANGS = {
