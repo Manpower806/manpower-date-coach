@@ -22,54 +22,57 @@ function MatrixCanvas() {
     const canvas = canvasRef.current;
     if(!canvas) return;
     const ctx = canvas.getContext("2d");
-    const resize = ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; };
-    resize();
-    window.addEventListener("resize", resize);
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const words = ["MANPOWER","BROTHERHOOD","ELITE","POWER","STRENGTH","ALPHA","DOMINANCE","STOIC","SIGMA"];
-    const fontSize = 11;
-    const colWidth = 90; // wider columns = fewer, no overlap
-    const cols = Math.floor(window.innerWidth / colWidth);
+    const SPEED = 1.5;        // all columns same speed
+    const FONT_SIZE = 12;
+    const COL_WIDTH = 100;
+    const cols = Math.floor(canvas.width / COL_WIDTH);
 
-    // Each column: staggered starts across full height
-    const columns = Array(cols).fill(0).map((_, i) => ({
-      y: Math.random() * canvas.height,  // random position on screen at start
-      speed: 1.2 + Math.random() * 0.8, // 1.2–2.0 px per frame - visible but not too fast
+    // All columns start at different y positions so screen fills immediately
+    const columns = Array.from({length: cols}, (_, i) => ({
+      x: i * COL_WIDTH + COL_WIDTH / 2,
+      y: Math.floor(Math.random() * (canvas.height / FONT_SIZE)) * FONT_SIZE,
       wordIdx: Math.floor(Math.random() * words.length),
-      x: i * colWidth + 10,
     }));
 
+    let frame = 0;
     let animId;
-    const draw = ()=>{
-      // Clear fully each frame - no blur/smear
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const draw = () => {
+      frame++;
+      // Only move every 3 frames → smooth but not jittery
+      if (frame % 3 !== 0) { animId = requestAnimationFrame(draw); return; }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.textAlign = "center";
 
       columns.forEach(col => {
-        const word = words[col.wordIdx];
-
-        // Single word only - no trail
-        ctx.font = `700 ${fontSize}px Cinzel, serif`;
-        ctx.fillStyle = "rgba(245,226,122,0.88)";
-        ctx.shadowColor = "rgba(212,175,55,0.6)";
-        ctx.shadowBlur = 5;
-        ctx.fillText(word, col.x, col.y);
+        ctx.font = `700 ${FONT_SIZE}px Cinzel, serif`;
+        ctx.fillStyle = "rgba(212,175,55,0.75)";
+        ctx.shadowColor = "rgba(212,175,55,0.5)";
+        ctx.shadowBlur = 4;
+        ctx.fillText(words[col.wordIdx], col.x, col.y);
         ctx.shadowBlur = 0;
 
-        col.y += col.speed;
+        col.y += FONT_SIZE * 1.8; // step down one word-height
 
-        if(col.y > canvas.height + fontSize * 2) {
-          col.y = -fontSize * 2;
+        if (col.y > canvas.height + FONT_SIZE) {
+          col.y = -FONT_SIZE;
           col.wordIdx = Math.floor(Math.random() * words.length);
-          col.speed = 1.2 + Math.random() * 0.8;
         }
       });
 
       animId = requestAnimationFrame(draw);
     };
+
     animId = requestAnimationFrame(draw);
-    return ()=>{ cancelAnimationFrame(animId); window.removeEventListener("resize",resize); };
-  },[]);
-  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.2}}/>;
+    return () => cancelAnimationFrame(animId);
+  }, []);
+  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.18}}/>;
 }
 
 const LANGS = {
