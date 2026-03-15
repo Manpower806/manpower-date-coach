@@ -227,6 +227,8 @@ export default function App({ user, onLogout }) {
   useEffect(()=>{
     const checkSession = async()=>{
       if(!user?.sessionToken) return;
+      // Admin bypass – no session/device restrictions
+      if(user.isAdmin) return;
       const {data} = await supabase.from("members").select("session_token,active,expires_at").eq("id",user.id).single();
       if(!data) return;
       // If session token changed = someone else logged in
