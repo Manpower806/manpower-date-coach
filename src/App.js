@@ -248,30 +248,6 @@ export default function App({ user, onLogout }) {
   },[user?.sessionToken]);
 
   const loadAdminData = async()=>{
-    setLoadingLogs(true);
-    const [{data:logs},{data:mems}] = await Promise.all([
-      supabase.from("login_logs").select("*").order("created_at",{ascending:false}).limit(50),
-      supabase.from("members").select("id,username,active,device_id,expires_at,last_seen").order("created_at",{ascending:false}),
-    ]);
-    if(logs) setLoginLogs(logs);
-    if(mems) setMembers(mems);
-    setLoadingLogs(false);
-  };
-
-  const resetDevice = async(memberId)=>{
-    await supabase.from("members").update({device_id:null}).eq("id",memberId);
-    await loadAdminData();
-    alert("Gerät zurückgesetzt! Nutzer kann sich jetzt von neuem Gerät einloggen.");
-  };
-
-  const setExpiry = async(memberId, days)=>{
-    const d = new Date();
-    d.setDate(d.getDate()+days);
-    await supabase.from("members").update({expires_at:d.toISOString()}).eq("id",memberId);
-    await loadAdminData();
-  };
-
-  const loadAdminData = async()=>{
     setLoadingAdmin(true);
     const [{data:logs},{data:mems}] = await Promise.all([
       supabase.from("login_logs").select("*").order("created_at",{ascending:false}).limit(50),
