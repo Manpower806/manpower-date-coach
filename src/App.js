@@ -38,6 +38,21 @@ function loadLocal() {
   catch { return {totalAnalyses:0,totalOpeners:0}; }
 }
 function saveLocal(d) { try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch{} }
+// Generate stable device ID
+function getDeviceId() {
+  let id = localStorage.getItem("mp_device_id");
+  if(!id){
+    id = "dev_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2);
+    localStorage.setItem("mp_device_id", id);
+  }
+  return id;
+}
+
+// Generate session token
+function genToken() {
+  return "sess_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,10);
+}
+
 function fileToB64(file, maxWidth=1200, quality=0.72) {
   return new Promise((res,rej)=>{
     const reader=new FileReader();
@@ -139,6 +154,14 @@ export default function App({ user, onLogout }) {
   // bible
   const [bibleEntries, setBibleEntries] = useState([]);
   const [loadingBible, setLoadingBible] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [loginLogs, setLoginLogs] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [loginLogs, setLoginLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [members, setMembers] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -171,17 +194,24 @@ export default function App({ user, onLogout }) {
     const fetchMusicFiles = async()=>{
       setLoadingMusic(true);
       try {
-        // Fetch from GitHub API to list public folder
+        const allSongs = [];
+        // 1. Check Supabase Storage bucket "music"
+        const {data:storageFiles} = await supabase.storage.from("music").list("",{limit:100});
+        if(storageFiles?.length){
+          for(const f of storageFiles.filter(f=>f.name.endsWith(".mp3"))){
+            const {data:urlData} = supabase.storage.from("music").getPublicUrl(f.name);
+            allSongs.push({file:urlData.publicUrl, name:f.name.replace(".mp3","").replace(/_/g," ")});
+          }
+        }
+        // 2. Also check GitHub public folder
         const res = await fetch("https://api.github.com/repos/Manpower806/manpower-date-coach/contents/public");
         const files = await res.json();
         if(Array.isArray(files)){
-          const mp3s = files
-            .filter(f=>f.name.endsWith(".mp3"))
-            .map(f=>({file:f.name, name:f.name.replace(".mp3","").replace(/_/g," ")}));
-          setMusicFiles(mp3s);
+          files.filter(f=>f.name.endsWith(".mp3"))
+            .forEach(f=>allSongs.push({file:"/"+f.name, name:f.name.replace(".mp3","").replace(/_/g," ")}));
         }
+        if(allSongs.length) setMusicFiles(allSongs);
       } catch(e){
-        // Fallback to localStorage
         try{setMusicFiles(JSON.parse(localStorage.getItem("mp_music_files")||"[]"));}catch{}
       }
       setLoadingMusic(false);
@@ -195,6 +225,82 @@ export default function App({ user, onLogout }) {
     if(tab==="community") loadComm();
     if(tab==="history") loadHist();
   },[mainTab, tab]);
+
+  // Validate session every 60 seconds - detect account sharing
+  useEffect(()=>{
+    const checkSession = async()=>{
+      if(!user?.sessionToken) return;
+      const {data} = await supabase.from("members").select("session_token,active,expires_at").eq("id",user.id).single();
+      if(!data) return;
+      // If session token changed = someone else logged in
+      if(data.session_token !== user.sessionToken){
+        alert("⚠️ Dein Account wurde auf einem anderen Gerät geöffnet. Du wirst ausgeloggt.");
+        onLogout();
+        return;
+      }
+      // If deactivated
+      if(!data.active){ alert("Dein Zugang wurde deaktiviert."); onLogout(); return; }
+      // If expired
+      if(data.expires_at && new Date(data.expires_at) < new Date()){ alert("Dein Zugang ist abgelaufen."); onLogout(); return; }
+      // Update last_seen
+      await supabase.from("members").update({last_seen: new Date().toISOString()}).eq("id",user.id);
+    };
+    checkSession();
+    const interval = setInterval(checkSession, 60000);
+    return ()=>clearInterval(interval);
+  },[user?.sessionToken]);
+
+  const loadAdminData = async()=>{
+    setLoadingLogs(true);
+    const [{data:logs},{data:mems}] = await Promise.all([
+      supabase.from("login_logs").select("*").order("created_at",{ascending:false}).limit(50),
+      supabase.from("members").select("id,username,active,device_id,expires_at,last_seen").order("created_at",{ascending:false}),
+    ]);
+    if(logs) setLoginLogs(logs);
+    if(mems) setMembers(mems);
+    setLoadingLogs(false);
+  };
+
+  const resetDevice = async(memberId)=>{
+    await supabase.from("members").update({device_id:null}).eq("id",memberId);
+    await loadAdminData();
+    alert("Gerät zurückgesetzt! Nutzer kann sich jetzt von neuem Gerät einloggen.");
+  };
+
+  const setExpiry = async(memberId, days)=>{
+    const d = new Date();
+    d.setDate(d.getDate()+days);
+    await supabase.from("members").update({expires_at:d.toISOString()}).eq("id",memberId);
+    await loadAdminData();
+  };
+
+  const loadAdminData = async()=>{
+    setLoadingAdmin(true);
+    const [{data:logs},{data:mems}] = await Promise.all([
+      supabase.from("login_logs").select("*").order("created_at",{ascending:false}).limit(50),
+      supabase.from("members").select("id,username,active,device_id,expires_at,last_seen,notes").order("created_at",{ascending:false}),
+    ]);
+    if(logs) setLoginLogs(logs);
+    if(mems) setMembers(mems);
+    setLoadingAdmin(false);
+  };
+
+  const resetDevice = async(memberId)=>{
+    await supabase.from("members").update({device_id:null}).eq("id",memberId);
+    await loadAdminData();
+    alert("Gerät zurückgesetzt! Nutzer kann sich auf neuem Gerät einloggen.");
+  };
+
+  const setExpiry = async(memberId, days)=>{
+    const date = days ? new Date(Date.now()+days*24*60*60*1000).toISOString() : null;
+    await supabase.from("members").update({expires_at:date}).eq("id",memberId);
+    await loadAdminData();
+  };
+
+  const toggleActive = async(memberId, current)=>{
+    await supabase.from("members").update({active:!current}).eq("id",memberId);
+    await loadAdminData();
+  };
 
   const loadBible = async()=>{
     setLoadingBible(true);
@@ -531,6 +637,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
+            {isAdmin&&<button onClick={()=>{setShowAdminPanel(true);loadAdminData();}} style={{background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"#e8a0b0",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16}}>⚙️ ADMIN</button>}
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>
@@ -880,9 +987,80 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
             {/* Admin: Neuer Beitrag Button */}
             {isAdmin&&!showNewPost&&!selectedEntry&&(
-              <MBtn onClick={()=>setShowNewPost(true)}>
-                ✍️  NEUEN BEITRAG ERSTELLEN
-              </MBtn>
+              <>
+                <MBtn onClick={()=>setShowNewPost(true)}>
+                  ✍️  NEUEN BEITRAG ERSTELLEN
+                </MBtn>
+                <button onClick={()=>{ setShowAdminPanel(s=>!s); if(!showAdminPanel) loadAdminData(); }}
+                  style={{width:"100%",background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"rgba(201,103,125,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,marginBottom:14}}>
+                  👑 ADMIN-PANEL {showAdminPanel?"▲":"▼"}
+                </button>
+                {showAdminPanel&&(
+                  <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(201,103,125,.2)",background:"rgba(3,2,1,.85)"}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"rgba(201,103,125,.8)",letterSpacing:2,marginBottom:14}}>👑 ADMIN-PANEL</div>
+
+                    {/* Members */}
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.gold,marginBottom:8}}>MITGLIEDER</div>
+                    {loadingLogs?<Spin text="LADE…"/>:members.map(m=>(
+                      <div key={m.id} style={{...gc,padding:"10px 12px",marginBottom:8,background:"rgba(3,2,1,.7)"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <div>
+                            <span style={{fontFamily:"'Cinzel',serif",fontSize:10,color:G.gold,fontWeight:700}}>{m.username.toUpperCase()}</span>
+                            <span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:m.active?"#5cb87a":"#e05c6a",marginLeft:8}}>{m.active?"✅ Aktiv":"❌ Gesperrt"}</span>
+                          </div>
+                          <div style={{display:"flex",gap:5}}>
+                            <button onClick={()=>resetDevice(m.id)}
+                              style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:G.gold,padding:"3px 8px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1}}>
+                              📱 GERÄT RESET
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>
+                          {m.device_id?`📱 Gerät gebunden`:"📱 Kein Gerät"} · 
+                          {m.last_seen?` Zuletzt: ${new Date(m.last_seen).toLocaleString("de-DE")}`:" Noch nie"}
+                        </div>
+                        {m.expires_at&&(
+                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:new Date(m.expires_at)<new Date()?"#e05c6a":"#5cb87a",marginTop:3}}>
+                            ⏰ Läuft ab: {new Date(m.expires_at).toLocaleDateString("de-DE")}
+                          </div>
+                        )}
+                        <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
+                          {[7,14,30,90].map(d=>(
+                            <button key={d} onClick={()=>setExpiry(m.id,d)}
+                              style={{background:"rgba(92,184,122,.1)",border:"1px solid rgba(92,184,122,.2)",color:"#5cb87a",padding:"3px 7px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1}}>
+                              +{d}T
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Login Logs */}
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:G.gold,marginBottom:8,marginTop:12}}>LOGIN-PROTOKOLL</div>
+                    {loginLogs.slice(0,20).map((log,i)=>(
+                      <div key={log.id||i} style={{...gc,padding:"8px 11px",marginBottom:5,background:"rgba(3,2,1,.6)",
+                        borderColor:log.status==="success"?"rgba(92,184,122,.2)":log.status.startsWith("blocked")?"rgba(224,92,106,.2)":"rgba(212,175,55,.12)"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <span style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>{log.username?.toUpperCase()}</span>
+                          <span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:
+                            log.status==="success"?"#5cb87a":
+                            log.status.startsWith("blocked")?"#e05c6a":
+                            "#c9a96e"}}>
+                            {log.status==="success"?"✅ Erfolg":
+                             log.status==="blocked_device"?"🚫 Falsches Gerät":
+                             log.status==="blocked_expired"?"⏰ Abgelaufen":
+                             log.status==="blocked_inactive"?"❌ Gesperrt":
+                             log.status==="failed"?"❌ Falsch":"⏳"}
+                          </span>
+                        </div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:G.muted,marginTop:2}}>
+                          {new Date(log.created_at).toLocaleString("de-DE")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {/* Admin: Neuer Beitrag Form */}
@@ -1244,6 +1422,77 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
         </div>
       </div>
+
+      {/* ── ADMIN PANEL ── */}
+      {showAdminPanel&&isAdmin&&(
+        <div style={{position:"fixed",inset:0,zIndex:9998,background:"rgba(0,0,0,.95)",overflowY:"auto"}}>
+          <div style={{maxWidth:480,margin:"0 auto",padding:"16px"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingTop:10}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37"}}>⚙️ ADMIN PANEL</div>
+              <button onClick={()=>setShowAdminPanel(false)}
+                style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:"#D4AF37",padding:"6px 16px",cursor:"pointer",borderRadius:18,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2}}>✕ SCHLIEẞEN</button>
+            </div>
+
+            {loadingAdmin?<div style={{textAlign:"center",color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,padding:"30px 0"}}>LADE DATEN…</div>:(
+              <>
+                {/* Members */}
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:"rgba(212,175,55,.6)",marginBottom:10}}>👥 MITGLIEDER</div>
+                {members.map(m=>(
+                  <div key={m.id} style={{background:"rgba(5,3,1,.85)",border:"1px solid rgba(212,175,55,.18)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:m.active?"#D4AF37":"rgba(212,175,55,.3)"}}>{m.username.toUpperCase()}</div>
+                      <div style={{display:"flex",gap:5}}>
+                        <button onClick={()=>toggleActive(m.id,m.active)}
+                          style={{background:m.active?"rgba(92,184,122,.12)":"rgba(224,92,106,.12)",border:`1px solid ${m.active?"rgba(92,184,122,.3)":"rgba(224,92,106,.3)"}`,color:m.active?"#5cb87a":"#e05c6a",padding:"3px 8px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1}}>
+                          {m.active?"✅ AKTIV":"❌ GESPERRT"}
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.4)",marginBottom:4}}>
+                      📱 Gerät: {m.device_id?m.device_id.slice(0,20)+"…":"Nicht gebunden"}
+                      {m.device_id&&<button onClick={()=>resetDevice(m.id)} style={{marginLeft:8,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",color:"#D4AF37",padding:"1px 6px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:6}}>RESET</button>}
+                    </div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.4)",marginBottom:6}}>
+                      🕐 Zuletzt: {m.last_seen?new Date(m.last_seen).toLocaleString("de-DE"):"Nie"}
+                      &nbsp;|&nbsp;
+                      ⏰ Läuft ab: {m.expires_at?new Date(m.expires_at).toLocaleDateString("de-DE"):"Kein Limit"}
+                    </div>
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {[7,14,30,90].map(d=>(
+                        <button key={d} onClick={()=>setExpiry(m.id,d)}
+                          style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.18)",color:"rgba(212,175,55,.6)",padding:"3px 8px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1}}>
+                          +{d}T
+                        </button>
+                      ))}
+                      <button onClick={()=>setExpiry(m.id,null)}
+                        style={{background:"rgba(92,184,122,.07)",border:"1px solid rgba(92,184,122,.2)",color:"#5cb87a",padding:"3px 8px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1}}>
+                        ∞ UNBEGRENZT
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Login Logs */}
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:"rgba(212,175,55,.6)",marginBottom:10,marginTop:20}}>📋 LOGIN-PROTOKOLL</div>
+                {loginLogs.map((log,i)=>(
+                  <div key={log.id||i} style={{background:"rgba(5,3,1,.85)",border:`1px solid ${log.status==="success"?"rgba(92,184,122,.2)":log.status==="failed"?"rgba(224,92,106,.2)":"rgba(230,126,34,.2)"}`,borderRadius:8,padding:"9px 11px",marginBottom:6}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:700,color:log.status==="success"?"#5cb87a":log.status==="failed"?"#e05c6a":"#e67e22"}}>
+                        {log.status==="success"?"✅":log.status==="failed"?"❌":log.status==="blocked_device"?"📱🚫":log.status==="blocked_expired"?"⏰🚫":"🔒"} {log.username?.toUpperCase()}
+                      </span>
+                      <span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.35)"}}>{new Date(log.created_at).toLocaleString("de-DE")}</span>
+                    </div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.35)"}}>
+                      {log.status} · {log.device_id?.slice(0,16)}…
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── FULLSCREEN MODAL ── */}
       {modalOpen&&(()=>{
