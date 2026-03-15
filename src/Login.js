@@ -26,23 +26,23 @@ function MatrixCanvas() {
     resize();
     window.addEventListener("resize", resize);
 
-    const words = ["MANPOWER","BRUDER","ELITE","POWER","M","KRAFT","ALPHA","MANN","BRUDERSCHAFT"];
+    const words = ["MANPOWER","BROTHERHOOD","ELITE","POWER","STRENGTH","ALPHA","DOMINANCE","STOIC","SIGMA","M"];
     const fontSize = 11;
     const cols = Math.floor(window.innerWidth / (fontSize * 7));
     const drops = Array(cols).fill(0).map(()=>-Math.random()*50);
     const wordIndices = Array(cols).fill(0).map(()=>Math.floor(Math.random()*words.length));
 
     const draw = ()=>{
-      ctx.fillStyle = "rgba(8,6,4,0.08)";
+      ctx.fillStyle = "rgba(8,6,4,0.15)";
       ctx.fillRect(0,0,canvas.width,canvas.height);
       for(let i=0;i<drops.length;i++){
         const word = words[wordIndices[i]];
         const y = drops[i]*fontSize;
         // Bright leading word
         ctx.font = `900 ${fontSize}px Cinzel, serif`;
-        ctx.fillStyle = `rgba(245,226,122,0.85)`;
-        ctx.shadowColor = "rgba(212,175,55,0.8)";
-        ctx.shadowBlur = 8;
+        ctx.fillStyle = `rgba(245,226,122,0.9)`;
+        ctx.shadowColor = "rgba(212,175,55,0.5)";
+        ctx.shadowBlur = 4;
         ctx.fillText(word, i*(fontSize*7), y);
         // Trail words dimmer
         ctx.shadowBlur = 0;
@@ -62,7 +62,7 @@ function MatrixCanvas() {
     const interval = setInterval(draw, 60);
     return ()=>{ clearInterval(interval); window.removeEventListener("resize",resize); };
   },[]);
-  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.55}}/>;
+  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.18}}/>;
 }
 
 const LANGS = {
