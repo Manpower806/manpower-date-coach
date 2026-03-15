@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabaseClient";
 
 // Generate or get persistent device ID
@@ -14,6 +14,55 @@ function getDeviceId() {
 // Generate session token
 function genToken() {
   return "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+}
+
+function MatrixCanvas() {
+  const canvasRef = useRef(null);
+  useEffect(()=>{
+    const canvas = canvasRef.current;
+    if(!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const resize = ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const words = ["MANPOWER","BRUDER","ELITE","POWER","M","KRAFT","ALPHA","MANN","BRUDERSCHAFT"];
+    const fontSize = 11;
+    const cols = Math.floor(window.innerWidth / (fontSize * 7));
+    const drops = Array(cols).fill(0).map(()=>-Math.random()*50);
+    const wordIndices = Array(cols).fill(0).map(()=>Math.floor(Math.random()*words.length));
+
+    const draw = ()=>{
+      ctx.fillStyle = "rgba(8,6,4,0.08)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<drops.length;i++){
+        const word = words[wordIndices[i]];
+        const y = drops[i]*fontSize;
+        // Bright leading word
+        ctx.font = `900 ${fontSize}px Cinzel, serif`;
+        ctx.fillStyle = `rgba(245,226,122,0.85)`;
+        ctx.shadowColor = "rgba(212,175,55,0.8)";
+        ctx.shadowBlur = 8;
+        ctx.fillText(word, i*(fontSize*7), y);
+        // Trail words dimmer
+        ctx.shadowBlur = 0;
+        for(let t=1;t<=3;t++){
+          const alpha = 0.35-(t*0.1);
+          ctx.fillStyle = `rgba(212,175,55,${alpha})`;
+          ctx.font = `400 ${fontSize-1}px Cinzel, serif`;
+          ctx.fillText(words[(wordIndices[i]+t)%words.length], i*(fontSize*7), y-(t*fontSize*1.8));
+        }
+        drops[i]++;
+        if(drops[i]*fontSize > canvas.height && Math.random()>0.97){
+          drops[i]=0;
+          wordIndices[i]=Math.floor(Math.random()*words.length);
+        }
+      }
+    };
+    const interval = setInterval(draw, 60);
+    return ()=>{ clearInterval(interval); window.removeEventListener("resize",resize); };
+  },[]);
+  return <canvas ref={canvasRef} style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.55}}/>;
 }
 
 const LANGS = {
@@ -139,35 +188,8 @@ export default function Login({ onLogin }) {
 
       <div style={{ position:"fixed",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 30%,rgba(180,120,40,.18) 0%,rgba(120,60,10,.12) 40%,transparent 70%)",pointerEvents:"none" }}/>
       <div style={{ position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px)",pointerEvents:"none" }}/>
-      {/* Matrix MANPOWER columns */}
-      {[...Array(16)].map((_,i)=>{
-        const words = ["MANPOWER","BRUDER","ELITE","POWER","M","MANN","KRAFT","ALPHA"];
-        const col = words.map((w,j)=>(
-          <div key={j} style={{
-            color:`rgba(212,175,55,${j===0?0.9:j===1?0.5:0.2})`,
-            fontSize: j===0?9:j===1?8:7,
-            fontFamily:"'Cinzel',serif",
-            letterSpacing:1,
-            lineHeight:"1.8",
-            textShadow: j===0?"0 0 8px rgba(212,175,55,.9), 0 0 16px rgba(212,175,55,.4)":"none",
-            animation: j===0?`matrixGlitch ${3+i*0.7}s ${i*0.3}s infinite`:"none"
-          }}>{w}</div>
-        ));
-        return (
-          <div key={i} style={{
-            position:"fixed",
-            left:`${3+i*6.2}%`,
-            bottom:"-110vh",
-            display:"flex",
-            flexDirection:"column",
-            alignItems:"center",
-            animation:`matrixRise ${10+i*1.3}s ${i*0.9}s infinite linear`,
-            pointerEvents:"none",
-            zIndex:0,
-            opacity:0.6
-          }}>{col}</div>
-        );
-      })}
+      {/* Matrix Canvas Background */}
+      <MatrixCanvas />
 
       <div style={{ position:"relative",zIndex:1,width:"100%",maxWidth:420,margin:"0 auto",padding:"0 20px",animation:"fadeIn .6s ease" }}>
         {/* Logo */}
