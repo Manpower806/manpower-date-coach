@@ -237,7 +237,8 @@ export default function App({ user, onLogout }) {
       const {data} = await supabase.from("members").select("session_token,active,expires_at").eq("id",user.id).single();
       if(!data) return;
       // If session token changed = someone else logged in
-      if(data.session_token !== user.sessionToken){
+      // Only check if DB has a token (null = reset by admin, allow)
+      if(data.session_token && data.session_token !== user.sessionToken){
         alert("⚠️ Dein Account wurde auf einem anderen Gerät geöffnet. Du wirst ausgeloggt.");
         onLogout();
         return;
