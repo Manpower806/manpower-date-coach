@@ -16,16 +16,30 @@ function genToken() {
   return "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2);
 }
 
+const LANGS = {
+  de: { flag:"🇩🇪", label:"DE", user:"BENUTZERNAME", pass:"PASSWORT", ph_user:"dein-name", ph_pass:"••••••••", btn:"LOG IN", checking:"WIRD GEPRÜFT…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Bitte alles ausfüllen.", err_wrong:"Falscher Benutzername oder Passwort.", err_inactive:"Dein Zugang wurde deaktiviert. Kontaktiere den Admin.", err_expired:"Dein Zugang ist abgelaufen. Kontaktiere den Admin.", err_device:"Dieser Account ist an ein anderes Gerät gebunden. Kontaktiere den Admin." },
+  en: { flag:"🇬🇧", label:"EN", user:"USERNAME", pass:"PASSWORD", ph_user:"your-name", ph_pass:"••••••••", btn:"LOG IN", checking:"CHECKING…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Please fill in all fields.", err_wrong:"Wrong username or password.", err_inactive:"Your access has been deactivated. Contact the admin.", err_expired:"Your access has expired. Contact the admin.", err_device:"This account is bound to another device. Contact the admin." },
+  tr: { flag:"🇹🇷", label:"TR", user:"KULLANICI ADI", pass:"ŞİFRE", ph_user:"adın", ph_pass:"••••••••", btn:"GİRİŞ", checking:"KONTROL EDİLİYOR…", access:"ÜYE ERİŞİMİ", bottom:"SADECE ELİT ÜYELER", err_empty:"Lütfen tüm alanları doldurun.", err_wrong:"Yanlış kullanıcı adı veya şifre.", err_inactive:"Erişiminiz devre dışı bırakıldı. Yönetici ile iletişime geçin.", err_expired:"Erişim süreniz doldu. Yönetici ile iletişime geçin.", err_device:"Bu hesap başka bir cihaza bağlı. Yönetici ile iletişime geçin." },
+  ar: { flag:"🇸🇦", label:"AR", user:"اسم المستخدم", pass:"كلمة المرور", ph_user:"اسمك", ph_pass:"••••••••", btn:"دخول", checking:"جارٍ التحقق…", access:"وصول الأعضاء", bottom:"للأعضاء النخبة فقط", err_empty:"يرجى ملء جميع الحقول.", err_wrong:"اسم مستخدم أو كلمة مرور خاطئة.", err_inactive:"تم تعطيل وصولك. تواصل مع المسؤول.", err_expired:"انتهت صلاحية وصولك. تواصل مع المسؤول.", err_device:"هذا الحساب مرتبط بجهاز آخر. تواصل مع المسؤول." },
+  es: { flag:"🇪🇸", label:"ES", user:"USUARIO", pass:"CONTRASEÑA", ph_user:"tu-nombre", ph_pass:"••••••••", btn:"ENTRAR", checking:"VERIFICANDO…", access:"ACCESO MIEMBRO", bottom:"SOLO MIEMBROS ELITE", err_empty:"Por favor rellena todos los campos.", err_wrong:"Usuario o contraseña incorrectos.", err_inactive:"Tu acceso ha sido desactivado. Contacta al admin.", err_expired:"Tu acceso ha caducado. Contacta al admin.", err_device:"Esta cuenta está vinculada a otro dispositivo. Contacta al admin." },
+  it: { flag:"🇮🇹", label:"IT", user:"NOME UTENTE", pass:"PASSWORD", ph_user:"tuo-nome", ph_pass:"••••••••", btn:"ACCEDI", checking:"VERIFICA…", access:"ACCESSO MEMBRO", bottom:"SOLO MEMBRI ELITE", err_empty:"Compila tutti i campi.", err_wrong:"Nome utente o password errati.", err_inactive:"Il tuo accesso è stato disattivato. Contatta l'admin.", err_expired:"Il tuo accesso è scaduto. Contatta l'admin.", err_device:"Questo account è legato a un altro dispositivo. Contatta l'admin." },
+  fr: { flag:"🇫🇷", label:"FR", user:"NOM D'UTILISATEUR", pass:"MOT DE PASSE", ph_user:"ton-nom", ph_pass:"••••••••", btn:"CONNEXION", checking:"VÉRIFICATION…", access:"ACCÈS MEMBRE", bottom:"MEMBRES ÉLITE SEULEMENT", err_empty:"Veuillez remplir tous les champs.", err_wrong:"Nom d'utilisateur ou mot de passe incorrect.", err_inactive:"Votre accès a été désactivé. Contactez l'admin.", err_expired:"Votre accès a expiré. Contactez l'admin.", err_device:"Ce compte est lié à un autre appareil. Contactez l'admin." },
+  ru: { flag:"🇷🇺", label:"RU", user:"ИМЯ ПОЛЬЗОВАТЕЛЯ", pass:"ПАРОЛЬ", ph_user:"твоё-имя", ph_pass:"••••••••", btn:"ВОЙТИ", checking:"ПРОВЕРКА…", access:"ДОСТУП УЧАСТНИКА", bottom:"ТОЛЬКО ЭЛИТНЫЕ УЧАСТНИКИ", err_empty:"Пожалуйста, заполните все поля.", err_wrong:"Неверное имя пользователя или пароль.", err_inactive:"Ваш доступ деактивирован. Свяжитесь с администратором.", err_expired:"Срок вашего доступа истёк. Свяжитесь с администратором.", err_device:"Этот аккаунт привязан к другому устройству. Свяжитесь с администратором." },
+};
+
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState(null);
   const [showPw,   setShowPw]   = useState(false);
+  const [lang,     setLang]     = useState(()=>localStorage.getItem("mp_lang")||"de");
+  const t = LANGS[lang] || LANGS.de;
+  const changeLang = (l) => { setLang(l); localStorage.setItem("mp_lang", l); setError(null); };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) { setError("Bitte alles ausfüllen."); return; }
+    if (!username.trim() || !password.trim()) { setError(t.err_empty); return; }
     setLoading(true); setError(null);
 
     const deviceId = getDeviceId();
@@ -48,19 +62,19 @@ export default function Login({ onLogin }) {
     });
 
     if (dbErr || !data) {
-      setError("Falscher Benutzername oder Passwort.");
+      setError(t.err_wrong);
       setLoading(false); return;
     }
 
     if (!data.active) {
-      setError("Dein Zugang wurde deaktiviert. Kontaktiere den Admin.");
+      setError(t.err_inactive);
       await supabase.from("login_logs").insert({ username: data.username, device_id: deviceId, user_agent: userAgent, status: "blocked_inactive" });
       setLoading(false); return;
     }
 
     // Check expiry
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      setError("Dein Zugang ist abgelaufen. Kontaktiere den Admin.");
+      setError(t.err_expired);
       await supabase.from("login_logs").insert({ username: data.username, device_id: deviceId, user_agent: userAgent, status: "blocked_expired" });
       setLoading(false); return;
     }
@@ -69,7 +83,7 @@ export default function Login({ onLogin }) {
 
     // Device binding check (skip for admin)
     if (!isAdmin && data.device_id && data.device_id !== deviceId) {
-      setError("Dieser Account ist an ein anderes Gerät gebunden. Kontaktiere den Admin.");
+      setError(t.err_device);
       await supabase.from("login_logs").insert({ username: data.username, device_id: deviceId, user_agent: userAgent, status: "blocked_device" });
       setLoading(false); return;
     }
@@ -133,25 +147,34 @@ export default function Login({ onLogin }) {
             <div style={{ flex:1,height:1,background:"linear-gradient(to left,transparent,rgba(212,175,55,.3))" }}/>
           </div>
           <div style={{ fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:28,letterSpacing:8,background:"linear-gradient(180deg,#F5E27A 0%,#D4AF37 40%,#8B6914 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:5,animation:"flicker 4s ease infinite" }}>MANPOWER</div>
-          <div style={{ fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:4 }}>BRUDERSCHAFT</div>
-          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:18 }}>Elite Date Coach</div>
+          <div style={{ fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:16 }}>BRUDERSCHAFT</div>
+          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:12 }}>Elite Date Coach</div>
+          <div style={{ display:"flex",justifyContent:"center",gap:5,flexWrap:"wrap",marginBottom:6 }}>
+            {Object.entries(LANGS).map(([key,val])=>(
+              <button key={key} onClick={()=>changeLang(key)}
+                style={{ background:lang===key?"rgba(212,175,55,.18)":"rgba(255,255,255,.04)", border:`1px solid ${lang===key?"rgba(212,175,55,.5)":"rgba(212,175,55,.12)"}`, borderRadius:20, padding:"3px 7px", cursor:"pointer", display:"flex", alignItems:"center", gap:3, transition:"all .2s" }}>
+                <span style={{fontSize:13}}>{val.flag}</span>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1,color:lang===key?"#D4AF37":"rgba(212,175,55,.35)"}}>{val.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Form */}
         <div style={{ background:"rgba(12,8,2,.85)",border:"1px solid rgba(212,175,55,.18)",borderRadius:4,padding:"32px 28px",backdropFilter:"blur(20px)" }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:24,justifyContent:"center" }}>
             <div style={{ flex:1,height:1,background:"rgba(212,175,55,.15)" }}/>
-            <span style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:5,color:"rgba(212,175,55,.5)" }}>MEMBER ACCESS</span>
+            <span style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:5,color:"rgba(212,175,55,.5)" }}>{t.access}</span>
             <div style={{ flex:1,height:1,background:"rgba(212,175,55,.15)" }}/>
           </div>
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom:14 }}>
-              <div style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7 }}>BENUTZERNAME</div>
-              <input className="linput" value={username} onChange={e=>setUsername(e.target.value)} placeholder="dein-name"
+              <div style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7 }}>{t.user}</div>
+              <input className="linput" value={username} onChange={e=>setUsername(e.target.value)} placeholder={t.ph_user}
                 style={{ width:"100%",background:"rgba(0,0,0,.5)",border:"1px solid rgba(212,175,55,.2)",borderRadius:2,padding:"12px 14px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14,transition:"all .25s",letterSpacing:.5 }}/>
             </div>
             <div style={{ marginBottom:22 }}>
-              <div style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7 }}>PASSWORT</div>
+              <div style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7 }}>{t.pass}</div>
               <div style={{ position:"relative" }}>
                 <input className="linput" type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"
                   style={{ width:"100%",background:"rgba(0,0,0,.5)",border:"1px solid rgba(212,175,55,.2)",borderRadius:2,padding:"12px 44px 12px 14px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14,transition:"all .25s",letterSpacing:.5 }}/>
@@ -163,12 +186,12 @@ export default function Login({ onLogin }) {
             )}
             <button className="lbtn" type="submit" disabled={loading}
               style={{ width:"100%",position:"relative",overflow:"hidden",background:loading?"rgba(212,175,55,.08)":"linear-gradient(135deg,#6B4F0A 0%,#D4AF37 35%,#F5E27A 50%,#D4AF37 65%,#6B4F0A 100%)",backgroundSize:"200% auto",animation:loading?"none":"shimmer 3s linear infinite",border:"none",borderRadius:2,padding:"15px",color:loading?"rgba(212,175,55,.3)":"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:12,letterSpacing:5,cursor:loading?"not-allowed":"pointer",boxShadow:loading?"none":"0 4px 20px rgba(212,175,55,.25)" }}>
-              {loading?"WIRD GEPRÜFT…":"🔑  LOG IN"}
+              {loading?t.checking:"🔑  "+t.btn}
             </button>
           </form>
         </div>
         <div style={{ textAlign:"center",marginTop:20 }}>
-          <span style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.2)" }}>ELITE MEMBERS ONLY</span>
+          <span style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.2)" }}>{t.bottom}</span>
         </div>
       </div>
     </div>
