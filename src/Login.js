@@ -139,17 +139,17 @@ export default function Login({ onLogin }) {
 
       <div style={{ position:"fixed",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 30%,rgba(180,120,40,.18) 0%,rgba(120,60,10,.12) 40%,transparent 70%)",pointerEvents:"none" }}/>
       <div style={{ position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px)",pointerEvents:"none" }}/>
-      {[...Array(18)].map((_,i)=>(
+      {[3.1,7.4,1.8,11.2,5.6,9.3,2.4,13.1,6.7,0.9,8.2,4.5,12.6,1.3,10.4,3.8,7.1,5.0].map((delay,i)=>(
         <div key={i} style={{
           position:"fixed",
-          left:`${4+i*5.5}%`,
+          left:`${3+i*5.2+((i*7)%11)*0.8}%`,
           bottom:"-5%",
-          width: i%3===0?3:i%3===1?2:1.5,
-          height: i%3===0?3:i%3===1?2:1.5,
-          background:`rgba(212,175,55,${i%2===0?0.7:0.45})`,
+          width: [2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
+          height: [2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
+          background:`rgba(212,175,55,${[.35,.25,.4,.2,.3,.25,.38,.22,.32,.28,.4,.2,.3,.25,.35,.22,.28,.32][i]})`,
           borderRadius:"50%",
-          boxShadow: i%3===0?"0 0 6px rgba(212,175,55,.8)":i%3===1?"0 0 4px rgba(212,175,55,.5)":"none",
-          animation:`particleFloat ${8+i*1.1}s ${i*0.7}s infinite linear`,
+          boxShadow:[true,false,true,false,false,true,false,true,false,false,true,false,true,false,false,true,false,false][i]?"0 0 4px rgba(212,175,55,.4)":"none",
+          animation:`particleFloat ${[11,14,9,16,12,10,15,13,11,17,9,14,12,10,16,13,11,15][i]}s ${delay}s infinite linear`,
           pointerEvents:"none",
           zIndex:0
         }}/>
