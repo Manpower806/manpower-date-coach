@@ -666,13 +666,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           <div style={{animation:"fadeUp .3s ease",paddingTop:4}}>
             {/* Tone */}
             <div style={{...gc,padding:"8px",marginBottom:12,background:"rgba(3,2,1,.72)"}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:3,color:"rgba(212,175,55,.38)",textAlign:"center",marginBottom:6}}>KOMMUNIKATIONSSTIL</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.7)",textAlign:"center",marginBottom:6}}>KOMMUNIKATIONSSTIL</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5}}>
                 {TONES.map(t=>(
                   <div key={t.key} className="tp" onClick={()=>setTone(t.key)}
                     style={{...gc,padding:"9px 4px",textAlign:"center",background:tone===t.key?"rgba(212,175,55,.13)":"rgba(3,2,1,.5)",borderColor:tone===t.key?"rgba(212,175,55,.5)":"rgba(212,175,55,.1)",boxShadow:tone===t.key?"0 0 14px rgba(212,175,55,.15)":"none"}}>
                     <div style={{fontSize:16,marginBottom:2}}>{t.emoji}</div>
-                    <div style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1,color:tone===t.key?G.gold:"rgba(212,175,55,.35)"}}>{t.label.toUpperCase()}</div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,fontWeight:700,color:tone===t.key?G.gold:"rgba(212,175,55,.65)"}}>{t.label.toUpperCase()}</div>
                   </div>
                 ))}
               </div>
@@ -683,11 +683,11 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               {COACH_TABS.map(([key,icon])=>(
                 <div key={key} className="tp" onClick={()=>setTab(key)}
                   style={{flex:1,padding:"9px 4px",textAlign:"center",fontFamily:"'Cinzel',serif",fontSize:11,
-                    color:tab===key?G.gold:"rgba(212,175,55,.3)",
+                    color:tab===key?G.gold:"rgba(212,175,55,.6)",
                     borderBottom:tab===key?`2px solid ${G.gold}`:"2px solid transparent",
                     marginBottom:-1,minWidth:44}}>
                   <div>{icon}</div>
-                  <div style={{fontSize:5,letterSpacing:1,marginTop:1}}>{COACH_LABELS[key].toUpperCase()}</div>
+                  <div style={{fontSize:6,letterSpacing:1,marginTop:1,fontWeight:700}}>{COACH_LABELS[key].toUpperCase()}</div>
                 </div>
               ))}
             </div>
@@ -1545,7 +1545,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
 // ── COMPONENTS ──────────────────────────────────────────────────────────────
 const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12};
-function SL({children}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.4)",marginBottom:8,textTransform:"uppercase"}}>{children}</div>;}
+function SL({children}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.75)",marginBottom:8,textTransform:"uppercase",fontWeight:600}}>{children}</div>;}
 function SecTitle({icon,title,sub}){return(
   <div style={{marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
