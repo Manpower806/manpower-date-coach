@@ -651,17 +651,11 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             ))}
           </div>
         ) : (
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"center",marginTop:16,marginBottom:28}}>
             <button onClick={()=>setMainTab(null)}
-              style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.45)",padding:"8px 14px",
+              style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.45)",padding:"8px 20px",
                 cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,
                 border:"1px solid rgba(212,175,55,.18)",borderRadius:10,whiteSpace:"nowrap"}}>← MENÜ</button>
-            <div style={{...gc,flex:1,padding:"9px 12px",textAlign:"center",
-              background:"rgba(212,175,55,.1)",borderColor:"rgba(212,175,55,.4)"}}>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:700,letterSpacing:2,color:"#D4AF37"}}>
-                {mainTab==="coach"?"🍑🫦  KI DATE COACH":"📖  MANPOWER-BIBEL"}
-              </div>
-            </div>
           </div>
         )}
 
@@ -669,7 +663,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
         {/* MAIN: KI DATE COACH           */}
         {/* ══════════════════════════════ */}
         {mainTab==="coach"&&(
-          <div style={{animation:"fadeUp .3s ease"}}>
+          <div style={{animation:"fadeUp .3s ease",paddingTop:4}}>
             {/* Tone */}
             <div style={{...gc,padding:"8px",marginBottom:12,background:"rgba(3,2,1,.72)"}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:3,color:"rgba(212,175,55,.38)",textAlign:"center",marginBottom:6}}>KOMMUNIKATIONSSTIL</div>
