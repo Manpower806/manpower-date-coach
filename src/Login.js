@@ -77,12 +77,19 @@ export default function Login({ onLogin }) {
     // Generate new session token
     const sessionToken = genToken();
 
-    // Update: bind device (first login), set session token, last_seen
-    await supabase.from("members").update({
-      device_id: data.device_id || deviceId,
-      session_token: sessionToken,
-      last_seen: new Date().toISOString(),
-    }).eq("id", data.id);
+    // Admin: no device binding, no session token overwrite (can login from anywhere)
+    if (isAdmin) {
+      await supabase.from("members").update({
+        last_seen: new Date().toISOString(),
+      }).eq("id", data.id);
+    } else {
+      // Update: bind device (first login), set session token, last_seen
+      await supabase.from("members").update({
+        device_id: data.device_id || deviceId,
+        session_token: sessionToken,
+        last_seen: new Date().toISOString(),
+      }).eq("id", data.id);
+    }
 
     // Log success
     await supabase.from("login_logs").insert({
