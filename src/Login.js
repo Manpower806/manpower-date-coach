@@ -130,7 +130,7 @@ export default function Login({ onLogin }) {
         @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes flicker{0%,100%{opacity:1}92%{opacity:.95}96%{opacity:.85}}
-        @keyframes particleFloat{0%{transform:translateY(0);opacity:0}10%{opacity:1}90%{opacity:.4}100%{transform:translateY(-105vh);opacity:0}}
+        @keyframes particleFloat{0%{transform:translateY(0);opacity:.5}50%{opacity:.8}100%{transform:translateY(-105vh);opacity:0}}
         *{box-sizing:border-box;} input{outline:none;}
         .linput:focus{border-color:#D4AF37!important;box-shadow:0 0 12px rgba(212,175,55,.15)!important;}
         .lbtn:not(:disabled):hover{transform:translateY(-3px)!important;box-shadow:0 14px 40px rgba(212,175,55,.45)!important;}
@@ -139,21 +139,24 @@ export default function Login({ onLogin }) {
 
       <div style={{ position:"fixed",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 30%,rgba(180,120,40,.18) 0%,rgba(120,60,10,.12) 40%,transparent 70%)",pointerEvents:"none" }}/>
       <div style={{ position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,rgba(212,175,55,.008) 0,rgba(212,175,55,.008) 1px,transparent 1px,transparent 60px)",pointerEvents:"none" }}/>
-      {[3.1,7.4,1.8,11.2,5.6,9.3,2.4,13.1,6.7,0.9,8.2,4.5,12.6,1.3,10.4,3.8,7.1,5.0].map((delay,i)=>(
-        <div key={i} style={{
+      {[...Array(18)].map((_,i)=>{
+        const durs=[11,14,9,16,12,10,15,13,11,17,9,14,12,10,16,13,11,15];
+        const dur=durs[i];
+        const neg=-((i*3.7+i*0.9)%dur).toFixed(1);
+        return <div key={i} style={{
           position:"fixed",
           left:`${3+i*5.2+((i*7)%11)*0.8}%`,
           bottom:"-5%",
-          width: [2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
-          height: [2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
+          width:[2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
+          height:[2,1.5,2.5,1.5,2,1.5,2.5,2,1.5,2,2.5,1.5,2,1.5,2.5,2,1.5,2][i],
           background:`rgba(212,175,55,${[.35,.25,.4,.2,.3,.25,.38,.22,.32,.28,.4,.2,.3,.25,.35,.22,.28,.32][i]})`,
           borderRadius:"50%",
           boxShadow:[true,false,true,false,false,true,false,true,false,false,true,false,true,false,false,true,false,false][i]?"0 0 4px rgba(212,175,55,.4)":"none",
-          animation:`particleFloat ${[11,14,9,16,12,10,15,13,11,17,9,14,12,10,16,13,11,15][i]}s ${delay}s infinite linear`,
+          animation:`particleFloat ${dur}s ${neg}s infinite linear`,
           pointerEvents:"none",
           zIndex:0
-        }}/>
-      ))}
+        }}/>;
+      })}
 
       <div style={{ position:"relative",zIndex:1,width:"100%",maxWidth:420,margin:"0 auto",padding:"0 20px",animation:"fadeIn .6s ease" }}>
         {/* Logo */}
