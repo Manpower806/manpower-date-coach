@@ -186,31 +186,35 @@ export default function App({ user, onLogout }) {
   const [musicFiles, setMusicFiles] = useState([]);
   const [loadingMusic, setLoadingMusic] = useState(false);
 
-  // Auto-fetch MP3 files from GitHub repo
+  // Auto-fetch MP3 files from Supabase Storage + GitHub
   useEffect(()=>{
     const fetchMusicFiles = async()=>{
       setLoadingMusic(true);
+      const allSongs = [];
+      // 1. Supabase Storage bucket "music"
       try {
-        const allSongs = [];
-        // 1. Check Supabase Storage bucket "music"
-        const {data:storageFiles} = await supabase.storage.from("music").list("",{limit:100});
-        if(storageFiles?.length){
-          for(const f of storageFiles.filter(f=>f.name.endsWith(".mp3"))){
+        const {data:storageFiles, error:storageErr} = await supabase.storage.from("music").list("",{limit:100,sortBy:{column:"name",order:"asc"}});
+        if(!storageErr && storageFiles?.length){
+          for(const f of storageFiles){
+            const lname = f.name.toLowerCase();
+            if(!lname.endsWith(".mp3") && !lname.endsWith(".m4a") && !lname.endsWith(".wav")) continue;
             const {data:urlData} = supabase.storage.from("music").getPublicUrl(f.name);
-            allSongs.push({file:urlData.publicUrl, name:f.name.replace(".mp3","").replace(/_/g," ")});
+            if(urlData?.publicUrl){
+              allSongs.push({file:urlData.publicUrl, name:f.name.replace(/\.[^.]+$/,"").replace(/_/g," ")});
+            }
           }
         }
-        // 2. Also check GitHub public folder
+      } catch(e){ console.warn("Supabase music fetch failed:",e); }
+      // 2. GitHub public folder
+      try {
         const res = await fetch("https://api.github.com/repos/Manpower806/manpower-date-coach/contents/public");
         const files = await res.json();
         if(Array.isArray(files)){
-          files.filter(f=>f.name.endsWith(".mp3"))
+          files.filter(f=>f.name.toLowerCase().endsWith(".mp3"))
             .forEach(f=>allSongs.push({file:"/"+f.name, name:f.name.replace(".mp3","").replace(/_/g," ")}));
         }
-        if(allSongs.length) setMusicFiles(allSongs);
-      } catch(e){
-        try{setMusicFiles(JSON.parse(localStorage.getItem("mp_music_files")||"[]"));}catch{}
-      }
+      } catch(e){ console.warn("GitHub music fetch failed:",e); }
+      if(allSongs.length) setMusicFiles(allSongs);
       setLoadingMusic(false);
     };
     fetchMusicFiles();
@@ -385,7 +389,7 @@ export default function App({ user, onLogout }) {
     // Start music if entry has one
     if(entry.music_url){
       if(audioRef.current){ audioRef.current.pause(); audioRef.current=null; }
-      const audio = new Audio("/"+entry.music_url);
+      const audio = new Audio(entry.music_url.startsWith("http") ? entry.music_url : "/"+entry.music_url);
       const start = entry.music_start||0;
       const end = entry.music_end||0;
       audio.currentTime = start;
@@ -1591,7 +1595,7 @@ function MusicPicker({musicUrl,setMusicUrl,musicStart,setMusicStart,musicEnd,set
   const startPreview=()=>{
     if(preview){preview.pause();setPreview(null);return;}
     if(!musicUrl) return;
-    const a=new Audio("/"+musicUrl);
+    const a=new Audio(musicUrl.startsWith("http") ? musicUrl : "/"+musicUrl);
     a.currentTime=musicStart||0; a.volume=0.7;
     const end=musicEnd||0;
     if(end>0){ a.ontimeupdate=()=>{ if(a.currentTime>=end){a.pause();setPreview(null);} }; }
