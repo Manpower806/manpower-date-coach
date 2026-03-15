@@ -134,7 +134,7 @@ export default function Login({ onLogin }) {
           </div>
           <div style={{ fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:28,letterSpacing:8,background:"linear-gradient(180deg,#F5E27A 0%,#D4AF37 40%,#8B6914 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:5,animation:"flicker 4s ease infinite" }}>MANPOWER</div>
           <div style={{ fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:4 }}>BRUDERSCHAFT</div>
-          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic" }}>Elite Date Coach</div>
+          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:18 }}>Elite Date Coach</div>
         </div>
 
         {/* Form */}
