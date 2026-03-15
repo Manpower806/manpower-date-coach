@@ -156,12 +156,9 @@ export default function App({ user, onLogout }) {
   const [loadingBible, setLoadingBible] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [loginLogs, setLoginLogs] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [loadingAdmin, setLoadingAdmin] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [loginLogs, setLoginLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [members, setMembers] = useState([]);
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
