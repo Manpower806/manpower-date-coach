@@ -17,15 +17,19 @@ function genToken() {
 }
 
 const LANGS = {
-  de: { flag:"🇩🇪", label:"DE", user:"BENUTZERNAME", pass:"PASSWORT", ph_user:"dein-name", ph_pass:"••••••••", btn:"LOG IN", checking:"WIRD GEPRÜFT…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Bitte alles ausfüllen.", err_wrong:"Falscher Benutzername oder Passwort.", err_inactive:"Dein Zugang wurde deaktiviert. Kontaktiere den Admin.", err_expired:"Dein Zugang ist abgelaufen. Kontaktiere den Admin.", err_device:"Dieser Account ist an ein anderes Gerät gebunden. Kontaktiere den Admin." },
-  en: { flag:"🇬🇧", label:"EN", user:"USERNAME", pass:"PASSWORD", ph_user:"your-name", ph_pass:"••••••••", btn:"LOG IN", checking:"CHECKING…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Please fill in all fields.", err_wrong:"Wrong username or password.", err_inactive:"Your access has been deactivated. Contact the admin.", err_expired:"Your access has expired. Contact the admin.", err_device:"This account is bound to another device. Contact the admin." },
-  tr: { flag:"🇹🇷", label:"TR", user:"KULLANICI ADI", pass:"ŞİFRE", ph_user:"adın", ph_pass:"••••••••", btn:"GİRİŞ", checking:"KONTROL EDİLİYOR…", access:"ÜYE ERİŞİMİ", bottom:"SADECE ELİT ÜYELER", err_empty:"Lütfen tüm alanları doldurun.", err_wrong:"Yanlış kullanıcı adı veya şifre.", err_inactive:"Erişiminiz devre dışı bırakıldı. Yönetici ile iletişime geçin.", err_expired:"Erişim süreniz doldu. Yönetici ile iletişime geçin.", err_device:"Bu hesap başka bir cihaza bağlı. Yönetici ile iletişime geçin." },
-  ar: { flag:"🇸🇦", label:"AR", user:"اسم المستخدم", pass:"كلمة المرور", ph_user:"اسمك", ph_pass:"••••••••", btn:"دخول", checking:"جارٍ التحقق…", access:"وصول الأعضاء", bottom:"للأعضاء النخبة فقط", err_empty:"يرجى ملء جميع الحقول.", err_wrong:"اسم مستخدم أو كلمة مرور خاطئة.", err_inactive:"تم تعطيل وصولك. تواصل مع المسؤول.", err_expired:"انتهت صلاحية وصولك. تواصل مع المسؤول.", err_device:"هذا الحساب مرتبط بجهاز آخر. تواصل مع المسؤول." },
-  es: { flag:"🇪🇸", label:"ES", user:"USUARIO", pass:"CONTRASEÑA", ph_user:"tu-nombre", ph_pass:"••••••••", btn:"ENTRAR", checking:"VERIFICANDO…", access:"ACCESO MIEMBRO", bottom:"SOLO MIEMBROS ELITE", err_empty:"Por favor rellena todos los campos.", err_wrong:"Usuario o contraseña incorrectos.", err_inactive:"Tu acceso ha sido desactivado. Contacta al admin.", err_expired:"Tu acceso ha caducado. Contacta al admin.", err_device:"Esta cuenta está vinculada a otro dispositivo. Contacta al admin." },
-  it: { flag:"🇮🇹", label:"IT", user:"NOME UTENTE", pass:"PASSWORD", ph_user:"tuo-nome", ph_pass:"••••••••", btn:"ACCEDI", checking:"VERIFICA…", access:"ACCESSO MEMBRO", bottom:"SOLO MEMBRI ELITE", err_empty:"Compila tutti i campi.", err_wrong:"Nome utente o password errati.", err_inactive:"Il tuo accesso è stato disattivato. Contatta l'admin.", err_expired:"Il tuo accesso è scaduto. Contatta l'admin.", err_device:"Questo account è legato a un altro dispositivo. Contatta l'admin." },
-  fr: { flag:"🇫🇷", label:"FR", user:"NOM D'UTILISATEUR", pass:"MOT DE PASSE", ph_user:"ton-nom", ph_pass:"••••••••", btn:"CONNEXION", checking:"VÉRIFICATION…", access:"ACCÈS MEMBRE", bottom:"MEMBRES ÉLITE SEULEMENT", err_empty:"Veuillez remplir tous les champs.", err_wrong:"Nom d'utilisateur ou mot de passe incorrect.", err_inactive:"Votre accès a été désactivé. Contactez l'admin.", err_expired:"Votre accès a expiré. Contactez l'admin.", err_device:"Ce compte est lié à un autre appareil. Contactez l'admin." },
-  ru: { flag:"🇷🇺", label:"RU", user:"ИМЯ ПОЛЬЗОВАТЕЛЯ", pass:"ПАРОЛЬ", ph_user:"твоё-имя", ph_pass:"••••••••", btn:"ВОЙТИ", checking:"ПРОВЕРКА…", access:"ДОСТУП УЧАСТНИКА", bottom:"ТОЛЬКО ЭЛИТНЫЕ УЧАСТНИКИ", err_empty:"Пожалуйста, заполните все поля.", err_wrong:"Неверное имя пользователя или пароль.", err_inactive:"Ваш доступ деактивирован. Свяжитесь с администратором.", err_expired:"Срок вашего доступа истёк. Свяжитесь с администратором.", err_device:"Этот аккаунт привязан к другому устройству. Свяжитесь с администратором." },
+  de: { cc:"de", label:"DE", name:"Deutsch", user:"BENUTZERNAME", pass:"PASSWORT", ph_user:"dein-name", ph_pass:"••••••••", btn:"LOG IN", checking:"WIRD GEPRÜFT…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Bitte alles ausfüllen.", err_wrong:"Falscher Benutzername oder Passwort.", err_inactive:"Dein Zugang wurde deaktiviert. Kontaktiere den Admin.", err_expired:"Dein Zugang ist abgelaufen. Kontaktiere den Admin.", err_device:"Dieser Account ist an ein anderes Gerät gebunden. Kontaktiere den Admin." },
+  en: { cc:"gb", label:"EN", name:"English", user:"USERNAME", pass:"PASSWORD", ph_user:"your-name", ph_pass:"••••••••", btn:"LOG IN", checking:"CHECKING…", access:"MEMBER ACCESS", bottom:"ELITE MEMBERS ONLY", err_empty:"Please fill in all fields.", err_wrong:"Wrong username or password.", err_inactive:"Your access has been deactivated. Contact the admin.", err_expired:"Your access has expired. Contact the admin.", err_device:"This account is bound to another device. Contact the admin." },
+  tr: { cc:"tr", label:"TR", name:"Türkçe", user:"KULLANICI ADI", pass:"ŞİFRE", ph_user:"adın", ph_pass:"••••••••", btn:"GİRİŞ", checking:"KONTROL EDİLİYOR…", access:"ÜYE ERİŞİMİ", bottom:"SADECE ELİT ÜYELER", err_empty:"Lütfen tüm alanları doldurun.", err_wrong:"Yanlış kullanıcı adı veya şifre.", err_inactive:"Erişiminiz devre dışı bırakıldı. Yönetici ile iletişime geçin.", err_expired:"Erişim süreniz doldu. Yönetici ile iletişime geçin.", err_device:"Bu hesap başka bir cihaza bağlı. Yönetici ile iletişime geçin." },
+  ar: { cc:"sa", label:"AR", name:"العربية", user:"اسم المستخدم", pass:"كلمة المرور", ph_user:"اسمك", ph_pass:"••••••••", btn:"دخول", checking:"جارٍ التحقق…", access:"وصول الأعضاء", bottom:"للأعضاء النخبة فقط", err_empty:"يرجى ملء جميع الحقول.", err_wrong:"اسم مستخدم أو كلمة مرور خاطئة.", err_inactive:"تم تعطيل وصولك. تواصل مع المسؤول.", err_expired:"انتهت صلاحية وصولك. تواصل مع المسؤول.", err_device:"هذا الحساب مرتبط بجهاز آخر. تواصل مع المسؤول." },
+  es: { cc:"es", label:"ES", name:"Español", user:"USUARIO", pass:"CONTRASEÑA", ph_user:"tu-nombre", ph_pass:"••••••••", btn:"ENTRAR", checking:"VERIFICANDO…", access:"ACCESO MIEMBRO", bottom:"SOLO MIEMBROS ELITE", err_empty:"Por favor rellena todos los campos.", err_wrong:"Usuario o contraseña incorrectos.", err_inactive:"Tu acceso ha sido desactivado. Contacta al admin.", err_expired:"Tu acceso ha caducado. Contacta al admin.", err_device:"Esta cuenta está vinculada a otro dispositivo. Contacta al admin." },
+  it: { cc:"it", label:"IT", name:"Italiano", user:"NOME UTENTE", pass:"PASSWORD", ph_user:"tuo-nome", ph_pass:"••••••••", btn:"ACCEDI", checking:"VERIFICA…", access:"ACCESSO MEMBRO", bottom:"SOLO MEMBRI ELITE", err_empty:"Compila tutti i campi.", err_wrong:"Nome utente o password errati.", err_inactive:"Il tuo accesso è stato disattivato. Contatta l'admin.", err_expired:"Il tuo accesso è scaduto. Contatta l'admin.", err_device:"Questo account è legato a un altro dispositivo. Contatta l'admin." },
+  fr: { cc:"fr", label:"FR", name:"Français", user:"NOM D'UTILISATEUR", pass:"MOT DE PASSE", ph_user:"ton-nom", ph_pass:"••••••••", btn:"CONNEXION", checking:"VÉRIFICATION…", access:"ACCÈS MEMBRE", bottom:"MEMBRES ÉLITE SEULEMENT", err_empty:"Veuillez remplir tous les champs.", err_wrong:"Nom d'utilisateur ou mot de passe incorrect.", err_inactive:"Votre accès a été désactivé. Contactez l'admin.", err_expired:"Votre accès a expiré. Contactez l'admin.", err_device:"Ce compte est lié à un autre appareil. Contactez l'admin." },
+  ru: { cc:"ru", label:"RU", name:"Русский", user:"ИМЯ ПОЛЬЗОВАТЕЛЯ", pass:"ПАРОЛЬ", ph_user:"твоё-имя", ph_pass:"••••••••", btn:"ВОЙТИ", checking:"ПРОВЕРКА…", access:"ДОСТУП УЧАСТНИКА", bottom:"ТОЛЬКО ЭЛИТНЫЕ УЧАСТНИКИ", err_empty:"Пожалуйста, заполните все поля.", err_wrong:"Неверное имя пользователя или пароль.", err_inactive:"Ваш доступ деактивирован. Свяжитесь с администратором.", err_expired:"Срок вашего доступа истёк. Свяжитесь с администратором.", err_device:"Этот аккаунт привязан к другому устройству. Свяжитесь с администратором." },
 };
+
+function FlagImg({ cc, size=18 }) {
+  return <img src={`https://flagcdn.com/w40/${cc}.png`} alt={cc} style={{width:size,height:size*0.67,objectFit:"cover",borderRadius:2,display:"block"}} />;
+}
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -34,6 +38,7 @@ export default function Login({ onLogin }) {
   const [error,    setError]    = useState(null);
   const [showPw,   setShowPw]   = useState(false);
   const [lang,     setLang]     = useState(()=>localStorage.getItem("mp_lang")||"de");
+  const [langOpen,  setLangOpen]  = useState(false);
   const t = LANGS[lang] || LANGS.de;
   const changeLang = (l) => { setLang(l); localStorage.setItem("mp_lang", l); setError(null); };
 
@@ -148,15 +153,26 @@ export default function Login({ onLogin }) {
           </div>
           <div style={{ fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:28,letterSpacing:8,background:"linear-gradient(180deg,#F5E27A 0%,#D4AF37 40%,#8B6914 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:5,animation:"flicker 4s ease infinite" }}>MANPOWER</div>
           <div style={{ fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:16 }}>BRUDERSCHAFT</div>
-          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:12 }}>Elite Date Coach</div>
-          <div style={{ display:"flex",justifyContent:"center",gap:5,flexWrap:"wrap",marginBottom:6 }}>
-            {Object.entries(LANGS).map(([key,val])=>(
-              <button key={key} onClick={()=>changeLang(key)}
-                style={{ background:lang===key?"rgba(212,175,55,.18)":"rgba(255,255,255,.04)", border:`1px solid ${lang===key?"rgba(212,175,55,.5)":"rgba(212,175,55,.12)"}`, borderRadius:20, padding:"3px 7px", cursor:"pointer", display:"flex", alignItems:"center", gap:3, transition:"all .2s" }}>
-                <span style={{fontSize:13}}>{val.flag}</span>
-                <span style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:1,color:lang===key?"#D4AF37":"rgba(212,175,55,.35)"}}>{val.label}</span>
-              </button>
-            ))}
+          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:11,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:20 }}>Elite Date Coach</div>
+          <div style={{ display:"flex",justifyContent:"center",marginBottom:6,position:"relative" }}>
+            <button onClick={()=>setLangOpen(s=>!s)}
+              style={{ background:"rgba(212,175,55,.08)", border:"1px solid rgba(212,175,55,.25)", borderRadius:20, padding:"5px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:7, transition:"all .2s" }}>
+              <FlagImg cc={LANGS[lang].cc} size={18}/>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#D4AF37"}}>{LANGS[lang].label}</span>
+              <span style={{fontSize:8,color:"rgba(212,175,55,.5)"}}>▼</span>
+            </button>
+            {langOpen&&(
+              <div style={{ position:"absolute",top:"110%",left:"50%",transform:"translateX(-50%)",background:"rgba(10,6,2,.97)",border:"1px solid rgba(212,175,55,.25)",borderRadius:8,overflow:"hidden",zIndex:100,minWidth:160,boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
+                {Object.entries(LANGS).map(([key,val])=>(
+                  <button key={key} onClick={()=>{changeLang(key);setLangOpen(false);}}
+                    style={{ width:"100%",background:lang===key?"rgba(212,175,55,.12)":"transparent", border:"none", borderBottom:"1px solid rgba(212,175,55,.08)", padding:"7px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:9 }}>
+                    <FlagImg cc={val.cc} size={20}/>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:lang===key?"#D4AF37":"rgba(212,175,55,.45)"}}>{val.label}</span>
+                    <span style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:lang===key?"rgba(212,175,55,.7)":"rgba(212,175,55,.3)",marginLeft:"auto"}}>{val.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
