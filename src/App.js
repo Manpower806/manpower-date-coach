@@ -1243,9 +1243,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <div style={{...gc,padding:"16px",background:"rgba(3,2,1,.78)"}}>
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>{selectedEntry.title}</div>
                   <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>{selectedEntry.content}</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted,marginTop:12}}>
-                    {new Date(selectedEntry.created_at).toLocaleDateString("de-DE")}
-                  </div>
+
                   {isAdmin&&!editingEntry&&(
                     <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
                       <button onClick={()=>startEdit(selectedEntry)}
@@ -1379,8 +1377,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
                             {entry.content}
                           </div>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
-                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>{new Date(entry.created_at).toLocaleDateString("de-DE")}</div>
+                          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginTop:8}}>
                             <div style={{fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:1}}>LESEN →</div>
                           </div>
                         </div>
