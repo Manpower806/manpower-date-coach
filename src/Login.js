@@ -31,46 +31,36 @@ function MatrixCanvas() {
     const colWidth = 90; // wider columns = fewer, no overlap
     const cols = Math.floor(window.innerWidth / colWidth);
 
-    // Each column: independent y position, speed, word - staggered start
+    // Each column: staggered starts across full height
     const columns = Array(cols).fill(0).map((_, i) => ({
-      y: -(Math.random() * canvas.height * 1.5), // start well above, staggered
-      speed: 0.4 + Math.random() * 0.3,          // slow: 0.4–0.7 px per frame
+      y: Math.random() * canvas.height,  // random position on screen at start
+      speed: 1.2 + Math.random() * 0.8, // 1.2–2.0 px per frame - visible but not too fast
       wordIdx: Math.floor(Math.random() * words.length),
       x: i * colWidth + 10,
     }));
 
     let animId;
     const draw = ()=>{
-      ctx.fillStyle = "rgba(8,6,4,0.04)";
-      ctx.fillRect(0,0,canvas.width,canvas.height);
+      // Clear fully each frame - no blur/smear
+      ctx.clearRect(0,0,canvas.width,canvas.height);
 
       columns.forEach(col => {
         const word = words[col.wordIdx];
-        const y = col.y;
 
-        // Leading word - bright
+        // Single word only - no trail
         ctx.font = `700 ${fontSize}px Cinzel, serif`;
-        ctx.fillStyle = "rgba(245,226,122,0.85)";
+        ctx.fillStyle = "rgba(245,226,122,0.88)";
         ctx.shadowColor = "rgba(212,175,55,0.6)";
-        ctx.shadowBlur = 6;
-        ctx.fillText(word, col.x, y);
-
-        // Trail - 4 fading words above
+        ctx.shadowBlur = 5;
+        ctx.fillText(word, col.x, col.y);
         ctx.shadowBlur = 0;
-        const trailAlphas = [0.45, 0.28, 0.15, 0.07];
-        trailAlphas.forEach((alpha, t) => {
-          ctx.fillStyle = `rgba(212,175,55,${alpha})`;
-          ctx.font = `400 ${fontSize}px Cinzel, serif`;
-          ctx.fillText(words[(col.wordIdx + t + 1) % words.length], col.x, y - (t+1) * fontSize * 2.2);
-        });
 
         col.y += col.speed;
 
-        // Reset when fully off screen bottom
-        if(col.y > canvas.height + fontSize * 12) {
-          col.y = -fontSize * (10 + Math.random() * 20); // restart above screen
+        if(col.y > canvas.height + fontSize * 2) {
+          col.y = -fontSize * 2;
           col.wordIdx = Math.floor(Math.random() * words.length);
-          col.speed = 0.4 + Math.random() * 0.3;
+          col.speed = 1.2 + Math.random() * 0.8;
         }
       });
 
