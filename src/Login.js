@@ -130,7 +130,7 @@ export default function Login({ onLogin }) {
         @keyframes flicker{0%,100%{opacity:1}92%{opacity:.95}96%{opacity:.85}}
         @keyframes matrixRise{0%{transform:translateY(110vh);opacity:0}5%{opacity:1}80%{opacity:.7}100%{transform:translateY(-10vh);opacity:0}}
         @keyframes matrixFade{0%,100%{opacity:0.05}50%{opacity:1}}
-        @keyframes glitch{0%,95%,100%{opacity:1;transform:skewX(0)}96%{opacity:.8;transform:skewX(-2deg)}97%{opacity:.9;transform:skewX(1deg)}}
+        @keyframes matrixGlitch{0%,95%,100%{opacity:1;transform:skewX(0)}96%{opacity:.8;transform:skewX(-2deg)}97%{opacity:.9;transform:skewX(1deg)}}
         *{box-sizing:border-box;} input{outline:none;}
         .linput:focus{border-color:#D4AF37!important;box-shadow:0 0 12px rgba(212,175,55,.15)!important;}
         .lbtn:not(:disabled):hover{transform:translateY(-3px)!important;box-shadow:0 14px 40px rgba(212,175,55,.45)!important;}
@@ -150,7 +150,7 @@ export default function Login({ onLogin }) {
             letterSpacing:1,
             lineHeight:"1.8",
             textShadow: j===0?"0 0 8px rgba(212,175,55,.9), 0 0 16px rgba(212,175,55,.4)":"none",
-            animation: j===0?`glitch ${3+i*0.7}s ${i*0.3}s infinite`:"none"
+            animation: j===0?`matrixGlitch ${3+i*0.7}s ${i*0.3}s infinite`:"none"
           }}>{w}</div>
         ));
         return (
@@ -163,7 +163,8 @@ export default function Login({ onLogin }) {
             alignItems:"center",
             animation:`matrixRise ${10+i*1.3}s ${i*0.9}s infinite linear`,
             pointerEvents:"none",
-            zIndex:0
+            zIndex:0,
+            opacity:0.6
           }}>{col}</div>
         );
       })}
@@ -179,9 +180,9 @@ export default function Login({ onLogin }) {
             <div style={{ flex:1,height:1,background:"linear-gradient(to left,transparent,rgba(212,175,55,.3))" }}/>
           </div>
           <div style={{ fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:24,letterSpacing:6,background:"linear-gradient(180deg,#F5E27A 0%,#D4AF37 40%,#8B6914 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:5,animation:"flicker 4s ease infinite" }}>MANPOWER</div>
-          <div style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:8 }}>BRUDERSCHAFT</div>
-          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:10,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:10 }}>Elite Date Coach</div>
-          <div style={{ display:"flex",justifyContent:"center",marginBottom:4,position:"relative" }}>
+          <div style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:10,color:"rgba(212,175,55,.5)",marginBottom:12 }}>BRUDERSCHAFT</div>
+          <div style={{ fontFamily:"'Lato',sans-serif",fontSize:10,letterSpacing:3,color:"rgba(212,175,55,.3)",fontStyle:"italic",marginBottom:16 }}>Elite Date Coach</div>
+          <div style={{ display:"flex",justifyContent:"center",marginBottom:12,position:"relative" }}>
             <button onClick={()=>setLangOpen(s=>!s)}
               style={{ background:"rgba(212,175,55,.08)", border:"1px solid rgba(212,175,55,.25)", borderRadius:20, padding:"5px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:7, transition:"all .2s" }}>
               <FlagImg cc={LANGS[lang].cc} size={18}/>
