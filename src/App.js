@@ -540,10 +540,11 @@ Nur valides JSON: {"detectedLanguage":"...","profileAnalysis":"...","openers":[{
     setAnalyzing(true);setChatResult(null);setChatErr(null);setFeedback(null);setCurrentId(null);
     const commCtx=await buildCommCtx();
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey.trim(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-calls":"true"},body:JSON.stringify({model:"claude-opus-4-5",max_tokens:1500,
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey.trim(),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-calls":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,
         system:`Du bist der Chat-Coach der Manpower Bruderschaft. Farbige Blase=Nutzer, graue=sie. Analyse auf Deutsch, Antworten in Chat-Sprache. ${commCtx}
 Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEWOGEN|SCHWACH","kurzanalyse":"...","staerken":["..."],"verbesserungen":["..."],"psychoInsight":"...","naechsterSchritt":"...","replies":[{"label":"Selbstsicher","text":"...","warum":"..."},{"label":"Charmant","text":"...","warum":"..."},{"label":"Witzig","text":"...","warum":"..."}],"prinzip":"...","situation":"..."}`,
         messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:chatImg.mediaType,data:chatImg.base64}},{type:"text",text:`Analysiere. Ton: ${TONE_DE[tone]}. Nur JSON.`}]}]})});
+      if(!res) throw new Error("Netzwerkfehler – bitte nochmal versuchen.");
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const raw=data.content?.map(i=>i.text||"").join("")||"";
