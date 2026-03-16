@@ -160,6 +160,12 @@ export default function App({ user, onLogout }) {
   const [members, setMembers] = useState([]);
   const [loadingAdmin, setLoadingAdmin] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [readEntries, setReadEntries] = useState({});
+  const [entryReactions, setEntryReactions] = useState({});
+  const [entryComments, setEntryComments] = useState({});
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -223,6 +229,10 @@ export default function App({ user, onLogout }) {
   const touchStartX = useRef(null);
 
   useEffect(()=>{
+    // Check onboarding for new users
+    if(!localStorage.getItem("mp_onboarded_"+user?.username) && !user?.isAdmin){
+      setShowOnboarding(true);
+    }
     if(mainTab==="bible") loadBible();
     if(tab==="community") loadComm();
     if(tab==="history") loadHist();
@@ -288,6 +298,44 @@ export default function App({ user, onLogout }) {
     const{data}=await supabase.from("library").select("*").order("created_at",{ascending:false});
     if(data) setBibleEntries(data);
     setLoadingBible(false);
+  };
+
+  const markRead = async(entryId)=>{
+    if(readEntries[entryId]) return;
+    setReadEntries(r=>({...r,[entryId]:true}));
+    await supabase.from("entry_reads").upsert({entry_id:entryId,user_id:user.id,username:user.username},{onConflict:"entry_id,user_id"});
+  };
+
+  const loadReactions = async(entryId)=>{
+    const{data}=await supabase.from("entry_reactions").select("emoji,username").eq("entry_id",entryId);
+    if(data){
+      const grouped={};
+      data.forEach(r=>{ grouped[r.emoji]=(grouped[r.emoji]||[]); if(!grouped[r.emoji].includes(r.username)) grouped[r.emoji].push(r.username); });
+      setEntryReactions(r=>({...r,[entryId]:grouped}));
+    }
+  };
+
+  const toggleReaction = async(entryId, emoji)=>{
+    const current = entryReactions[entryId]?.[emoji]||[];
+    const hasReacted = current.includes(user.username);
+    if(hasReacted){
+      await supabase.from("entry_reactions").delete().eq("entry_id",entryId).eq("username",user.username).eq("emoji",emoji);
+    } else {
+      await supabase.from("entry_reactions").upsert({entry_id:entryId,user_id:user.id,username:user.username,emoji},{onConflict:"entry_id,user_id,emoji"});
+    }
+    loadReactions(entryId);
+  };
+
+  const loadComments = async(entryId)=>{
+    const{data}=await supabase.from("entry_comments").select("*").eq("entry_id",entryId).order("created_at",{ascending:true});
+    if(data) setEntryComments(c=>({...c,[entryId]:data}));
+  };
+
+  const addComment = async(entryId)=>{
+    if(!newComment.trim()) return;
+    await supabase.from("entry_comments").insert({entry_id:entryId,user_id:user.id,username:user.username,text:newComment.trim()});
+    setNewComment("");
+    loadComments(entryId);
   };
 
   const loadComm=async()=>{
@@ -387,7 +435,10 @@ export default function App({ user, onLogout }) {
   };
 
   const openEntry = (entry)=>{ 
-    setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null);
+    setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null); setShowComments(false);
+    markRead(entry.id);
+    loadReactions(entry.id);
+    loadComments(entry.id);
     // Start music if entry has one
     if(entry.music_url){
       if(audioRef.current){ audioRef.current.pause(); audioRef.current=null; }
@@ -629,6 +680,36 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>
+
+        {/* ONBOARDING */}
+        {showOnboarding&&(
+          <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.95)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{maxWidth:380,width:"100%",background:"rgba(12,8,2,.95)",border:"1px solid rgba(212,175,55,.3)",borderRadius:12,padding:"32px 24px",textAlign:"center"}}>
+              <div style={{fontSize:48,marginBottom:16}}>👑</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#D4AF37",marginBottom:8,letterSpacing:3}}>WILLKOMMEN</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:4,color:"rgba(212,175,55,.5)",marginBottom:20}}>MANPOWER BRUDERSCHAFT</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)",lineHeight:1.8,marginBottom:24}}>
+                Du bist jetzt Teil der Elite.<br/>
+                Hier findest du KI-gestütztes Dating-Coaching, die Manpower-Bibel und das Wissen der Bruderschaft.
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24,textAlign:"left"}}>
+                {[["🍑🫦","KI DATE COACH","Opener generieren, Chats analysieren, Antworten optimieren"],["📖","MANPOWER-BIBEL","Wissen, Prinzipien und Lektionen der Bruderschaft"]].map(([icon,title,desc])=>(
+                  <div key={title} style={{background:"rgba(212,175,55,.06)",border:"1px solid rgba(212,175,55,.15)",borderRadius:8,padding:"12px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+                    <span style={{fontSize:20}}>{icon}</span>
+                    <div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"#D4AF37",letterSpacing:2,marginBottom:3}}>{title}</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.55)"}}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>{setShowOnboarding(false);localStorage.setItem("mp_onboarded_"+user.username,"1");}}
+                style={{width:"100%",background:"linear-gradient(135deg,#6B4F0A,#D4AF37,#F5E27A,#D4AF37,#6B4F0A)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:6,padding:"14px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:"pointer"}}>
+                BETRETEN →
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* MAIN TAB SWITCHER */}
         {!mainTab ? (
@@ -1251,6 +1332,42 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>{selectedEntry.title}</div>
                   <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>{selectedEntry.content}</div>
 
+                  {/* Reactions */}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:16,marginBottom:8}}>
+                    {["🔥","💯","👑","💪","🎯"].map(emoji=>{
+                      const reacted=(entryReactions[selectedEntry.id]?.[emoji]||[]).includes(user.username);
+                      const count=(entryReactions[selectedEntry.id]?.[emoji]||[]).length;
+                      return <button key={emoji} onClick={()=>toggleReaction(selectedEntry.id,emoji)}
+                        style={{background:reacted?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${reacted?"rgba(212,175,55,.5)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"5px 10px",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",gap:4}}>
+                        {emoji}{count>0&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:reacted?"#D4AF37":"rgba(255,255,255,.5)"}}>{count}</span>}
+                      </button>;
+                    })}
+                  </div>
+
+                  {/* Comments toggle */}
+                  <button onClick={()=>setShowComments(s=>!s)}
+                    style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.18)",borderRadius:8,padding:"7px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.7)",marginBottom:showComments?10:0,width:"100%",textAlign:"left"}}>
+                    💬 KOMMENTARE {entryComments[selectedEntry.id]?.length>0?`(${entryComments[selectedEntry.id].length})`:""}  {showComments?"▲":"▼"}
+                  </button>
+                  {showComments&&(
+                    <div style={{marginBottom:12}}>
+                      {(entryComments[selectedEntry.id]||[]).map((c,i)=>(
+                        <div key={i} style={{borderBottom:"1px solid rgba(212,175,55,.08)",padding:"8px 0"}}>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.6)",marginBottom:3,letterSpacing:1}}>{c.username.toUpperCase()}</div>
+                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.8)"}}>{c.text}</div>
+                        </div>
+                      ))}
+                      <div style={{display:"flex",gap:8,marginTop:10}}>
+                        <input value={newComment} onChange={e=>setNewComment(e.target.value)}
+                          onKeyDown={e=>e.key==="Enter"&&addComment(selectedEntry.id)}
+                          placeholder="Kommentar schreiben…"
+                          style={{flex:1,background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.2)",borderRadius:6,padding:"8px 10px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:12}}/>
+                        <button onClick={()=>addComment(selectedEntry.id)}
+                          style={{background:"rgba(212,175,55,.15)",border:"1px solid rgba(212,175,55,.3)",borderRadius:6,padding:"8px 12px",cursor:"pointer",color:"#D4AF37",fontSize:14}}>➤</button>
+                      </div>
+                    </div>
+                  )}
+
                   {isAdmin&&!editingEntry&&(
                     <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
                       <button onClick={()=>startEdit(selectedEntry)}
@@ -1384,8 +1501,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                           <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
                             {entry.content}
                           </div>
-                          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginTop:8}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:1}}>LESEN →</div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+                            {readEntries[entry.id]&&<div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(92,184,122,.7)",letterSpacing:1}}>✓ GELESEN</div>}
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:1,marginLeft:"auto"}}>LESEN →</div>
                           </div>
                         </div>
                       </div>
@@ -1416,7 +1534,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             {loadingAdmin?<div style={{textAlign:"center",color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,padding:"30px 0"}}>LADE DATEN…</div>:(
               <>
                 {/* Members */}
-                <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:"rgba(212,175,55,.6)",marginBottom:10}}>👥 MITGLIEDER</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:"rgba(212,175,55,.6)",marginBottom:10}}>👥 MITGLIEDER ({members.length})</div>
                 {members.map(m=>(
                   <div key={m.id} style={{background:"rgba(5,3,1,.85)",border:"1px solid rgba(212,175,55,.18)",borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
