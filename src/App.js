@@ -1837,13 +1837,6 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                   </svg>
                 </button>
-                {/* LESEN */}
-                <button onClick={()=>onOpen(entry)}
-                  style={{background:"none",border:"none",cursor:"pointer",padding:0}}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" strokeWidth="2">
-                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                  </svg>
-                </button>
                 {/* Bookmark */}
                 <button style={{background:"none",border:"none",cursor:"pointer",padding:0,marginLeft:"auto"}}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" strokeWidth="2">
