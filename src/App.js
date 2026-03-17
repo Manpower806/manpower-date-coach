@@ -1612,7 +1612,18 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     {isAdmin&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12}}>Erstelle den ersten Beitrag mit dem Button oben</div>}
                   </div>
                 ):(
-                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  <BibleFeed
+                    entries={bibleEntries}
+                    entryReactions={entryReactions}
+                    entryComments={entryComments}
+                    readEntries={readEntries}
+                    user={user}
+                    G={G}
+                    onOpen={openEntry}
+                    onReact={toggleReaction}
+                    onCommentOpen={(entry)=>{openEntry(entry);setTimeout(()=>setShowComments(true),300);}}
+                  />
+                  {false&&<div style={{display:"flex",flexDirection:"column",gap:0}}>
                     {bibleEntries.map(entry=>{
                       let imgs=[];
                       try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
@@ -1680,7 +1691,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         </div>
                       );
                     })}
-                  </div>
+                  </div>}
                 )}
               </>
             )}
@@ -1837,6 +1848,66 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
 // ── COMPONENTS ──────────────────────────────────────────────────────────────
 const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12};
+function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen}) {
+  try {
+    return (
+      <div style={{display:"flex",flexDirection:"column",gap:0}}>
+        {entries.map(entry=>{
+          let imgs=[];
+          try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
+          let totalReactions=0;
+          try{totalReactions=Object.values(entryReactions[entry.id]||{}).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch{}
+          const commentCount=Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
+          const hasReacted=(entryReactions[entry.id]?.["🔥"]||[]).includes(user?.username);
+          return (
+            <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",background:"rgba(3,2,1,.6)"}}>
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px"}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#D4AF37,#8B6914)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid rgba(212,175,55,.4)"}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:"#0a0806"}}>M</span>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:1}}>MANPOWER</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.4)"}}>Bruderschaft</div>
+                </div>
+                {readEntries[entry.id]&&<span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(92,184,122,.7)"}}>✓</span>}
+              </div>
+              {/* Image */}
+              {imgs[0]&&(
+                <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                  <img src={imgs[0]} alt="" loading="lazy"
+                    style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                    onError={e=>{e.target.style.display="none";}}
+                  />
+                  {imgs.length>1&&(
+                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>1/{imgs.length}</div>
+                  )}
+                </div>
+              )}
+              {/* Actions */}
+              <div style={{padding:"10px 12px 4px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+                  <span onClick={()=>onReact(entry.id,"🔥")} style={{cursor:"pointer",fontSize:22,opacity:hasReacted?1:0.45}}>🔥</span>
+                  <span onClick={()=>onCommentOpen(entry)} style={{cursor:"pointer",fontSize:20,opacity:0.55}}>💬</span>
+                  <div style={{marginLeft:"auto",fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>LESEN →</div>
+                </div>
+                {totalReactions>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12,fontWeight:700,color:"rgba(245,237,232,.9)",marginBottom:4}}>{totalReactions} Reaktion{totalReactions!==1?"en":""}</div>}
+                <div style={{marginBottom:4,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:G.gold,marginRight:6}}>{entry.title}</span>
+                  {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.65)"}}>{entry.content?.slice(0,80)}{entry.content?.length>80?"…":""}</span>}
+                </div>
+                {commentCount>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>Alle {commentCount} Kommentare anzeigen</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  } catch(e) {
+    return <div style={{color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:9,textAlign:"center",padding:20}}>LADE BEITRÄGE…</div>;
+  }
+}
+
 function SL({children}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.75)",marginBottom:8,textTransform:"uppercase",fontWeight:600}}>{children}</div>;}
 function SecTitle({icon,title,sub}){return(
   <div style={{marginBottom:14}}>
