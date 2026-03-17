@@ -166,6 +166,75 @@ export default function App({ user, onLogout }) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [dailyMotiv, setDailyMotiv] = useState(null);
+
+  const DAILY_MOTIVATIONS = {
+    de: ["💪 Kein Mann wurde jemals schwächer durch Disziplin.","👑 Du bist nicht hier um zu überleben. Du bist hier um zu dominieren.","🔥 Andere schlafen. Du wächst. Das ist der Unterschied.","⚔️ Schmerz ist temporär. Stärke ist permanent.","🎯 Heute ist ein weiterer Tag um besser zu werden als gestern.","👁️ Die Welt respektiert Männer die sich selbst respektieren.","💎 Routine ist die Waffe des Siegers.","🦁 Ein Löwe fragt nicht um Erlaubnis."],
+    en: ["💪 No man ever became weaker through discipline.","👑 You're not here to survive. You're here to dominate.","🔥 Others sleep. You grow. That's the difference.","⚔️ Pain is temporary. Strength is permanent.","🎯 Today is another day to be better than yesterday.","👁️ The world respects men who respect themselves.","💎 Routine is the weapon of the winner.","🦁 A lion doesn't ask for permission."],
+    tr: ["💪 Hiçbir adam disiplinle zayıflamadı.","👑 Burada hayatta kalmak için değil, hükmetmek için varsın.","🔥 Diğerleri uyuyor. Sen büyüyorsun. İşte fark bu.","⚔️ Acı geçicidir. Güç kalıcıdır.","🎯 Bugün dünden daha iyi olmak için bir gün daha.","👁️ Dünya kendine saygı duyan erkeklere saygı duyar.","💎 Rutin, kazananın silahıdır.","🦁 Aslan izin istemez."],
+    ar: ["💪 لم يضعف رجل قط بسبب الانضباط.","👑 أنت هنا لتسود، لا لتبقى فحسب.","🔥 الآخرون نائمون. أنت تنمو. هذا هو الفرق.","⚔️ الألم مؤقت. القوة دائمة.","🎯 اليوم يوم آخر لتكون أفضل من الأمس.","👁️ العالم يحترم الرجال الذين يحترمون أنفسهم.","💎 الروتين هو سلاح الفائز.","🦁 الأسد لا يطلب الإذن."],
+    es: ["💪 Ningún hombre se volvió más débil por la disciplina.","👑 No estás aquí para sobrevivir. Estás aquí para dominar.","🔥 Otros duermen. Tú creces. Esa es la diferencia.","⚔️ El dolor es temporal. La fuerza es permanente.","🎯 Hoy es otro día para ser mejor que ayer.","👁️ El mundo respeta a los hombres que se respetan.","💎 La rutina es el arma del ganador.","🦁 Un león no pide permiso."],
+    it: ["💪 Nessun uomo è mai diventato più debole grazie alla disciplina.","👑 Non sei qui per sopravvivere. Sei qui per dominare.","🔥 Gli altri dormono. Tu cresci. Questa è la differenza.","⚔️ Il dolore è temporaneo. La forza è permanente.","🎯 Oggi è un altro giorno per essere migliore di ieri.","👁️ Il mondo rispetta gli uomini che rispettano se stessi.","💎 La routine è l'arma del vincitore.","🦁 Un leone non chiede il permesso."],
+    fr: ["💪 Aucun homme n'est jamais devenu plus faible grâce à la discipline.","👑 Tu n'es pas ici pour survivre. Tu es ici pour dominer.","🔥 Les autres dorment. Tu grandis. C'est la différence.","⚔️ La douleur est temporaire. La force est permanente.","🎯 Aujourd'hui est un autre jour pour être meilleur qu'hier.","👁️ Le monde respecte les hommes qui se respectent.","💎 La routine est l'arme du gagnant.","🦁 Un lion ne demande pas la permission."],
+    ru: ["💪 Ни один мужчина не стал слабее от дисциплины.","👑 Ты здесь не чтобы выживать. Ты здесь чтобы доминировать.","🔥 Другие спят. Ты растёшь. В этом разница.","⚔️ Боль временна. Сила постоянна.","🎯 Сегодня ещё один день стать лучше, чем вчера.","👁️ Мир уважает мужчин, которые уважают себя.","💎 Рутина — оружие победителя.","🦁 Лев не спрашивает разрешения."],
+  };
+  const [pushLoading, setPushLoading] = useState(false);
+
+  const VAPID_PUBLIC = "BPqoXA8SUbq5-gXzvtk2rb8eP1nQNblj_74jEp8fWOEq3b3l9I-h0lATWm5JB0R6cKZU1eGmwjRFGq_qtlwBKdo";
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = "=".repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  };
+
+  const subscribePush = async () => {
+    setPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+      });
+      const lang = localStorage.getItem("mp_lang") || "de";
+      await supabase.from("push_subscriptions").upsert({
+        user_id: user.id,
+        username: user.username,
+        subscription: JSON.stringify(sub),
+        lang,
+      }, { onConflict: "user_id" });
+      setPushEnabled(true);
+      localStorage.setItem("mp_push_enabled", "1");
+      alert("✅ Push Notifications aktiviert!");
+    } catch(e) {
+      alert("❌ Fehler: " + e.message);
+    }
+    setPushLoading(false);
+  };
+
+  const unsubscribePush = async () => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+      await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+      setPushEnabled(false);
+      localStorage.removeItem("mp_push_enabled");
+    } catch(e) {}
+  };
+
+  const sendPushToAll = async (title, body, type="general") => {
+    const { data: subs } = await supabase.from("push_subscriptions").select("*");
+    if (!subs?.length) return;
+    const subscriptions = subs.map(s => ({ subscription: JSON.parse(s.subscription), lang: s.lang }));
+    await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptions, title, body, type }),
+    });
+  };
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -232,6 +301,17 @@ export default function App({ user, onLogout }) {
     // Check onboarding for new users
     if(!localStorage.getItem("mp_onboarded_"+user?.username) && !user?.isAdmin){
       setShowOnboarding(true);
+    }
+    // Check push status
+    if(localStorage.getItem("mp_push_enabled")) setPushEnabled(true);
+    // Daily motivation - show once per day
+    const today = new Date().toDateString();
+    const lastShown = localStorage.getItem("mp_motiv_date_"+user?.username);
+    if(lastShown !== today){
+      const lang = localStorage.getItem("mp_lang")||"de";
+      const msgs = DAILY_MOTIVATIONS[lang]||DAILY_MOTIVATIONS.de;
+      const msg = msgs[new Date().getDay() % msgs.length];
+      setTimeout(()=>{ setDailyMotiv(msg); localStorage.setItem("mp_motiv_date_"+user?.username, today); }, 1500);
     }
     if(mainTab==="bible") loadBible();
     if(tab==="community") loadComm();
@@ -426,6 +506,8 @@ export default function App({ user, onLogout }) {
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
       setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false);
+      // Send push to all members
+      sendPushToAll("📖 MANPOWER-BIBEL", "Neuer Beitrag: " + newTitle, "bible");
       await loadBible();
     } catch(e){
       alert("Fehler beim Speichern: "+e.message);
@@ -677,6 +759,12 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
             {isAdmin&&<button onClick={()=>{setShowAdminPanel(true);loadAdminData();}} style={{background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"#e8a0b0",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16}}>⚙️ ADMIN</button>}
+            {"serviceWorker" in navigator && "PushManager" in window && (
+              <button onClick={pushEnabled?unsubscribePush:subscribePush} disabled={pushLoading}
+                style={{background:pushEnabled?"rgba(92,184,122,.1)":"rgba(212,175,55,.07)",border:`1px solid ${pushEnabled?"rgba(92,184,122,.3)":"rgba(212,175,55,.2)"}`,color:pushEnabled?"#5cb87a":"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s"}}>
+                {pushLoading?"…":pushEnabled?"🔔":"🔕"}
+              </button>
+            )}
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>
@@ -707,6 +795,20 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 style={{width:"100%",background:"linear-gradient(135deg,#6B4F0A,#D4AF37,#F5E27A,#D4AF37,#6B4F0A)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:6,padding:"14px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:"pointer"}}>
                 BETRETEN →
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* DAILY MOTIVATION BANNER */}
+        {dailyMotiv&&(
+          <div style={{position:"fixed",bottom:24,left:12,right:12,zIndex:9990,animation:"fadeUp .4s ease"}}>
+            <div style={{background:"linear-gradient(135deg,rgba(10,6,2,.97),rgba(20,12,2,.97))",border:"1px solid rgba(212,175,55,.35)",borderRadius:12,padding:"16px 18px",boxShadow:"0 8px 32px rgba(0,0,0,.6)",display:"flex",alignItems:"flex-start",gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.5)",marginBottom:6}}>MANPOWER · DAILY</div>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.9)",lineHeight:1.6}}>{dailyMotiv}</div>
+              </div>
+              <button onClick={()=>setDailyMotiv(null)}
+                style={{background:"none",border:"none",color:"rgba(212,175,55,.4)",cursor:"pointer",fontSize:18,padding:0,flexShrink:0}}>✕</button>
             </div>
           </div>
         )}
