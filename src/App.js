@@ -1371,8 +1371,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
                       {/* Main image */}
                       <div
-                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)",cursor:"pointer"}}
-                        onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; }}
+                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)",cursor:"pointer",touchAction:"pan-y"}}
+                        onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; e.stopPropagation(); }}
+                        onTouchMove={e=>{ if(touchStartX.current!==null){ const diff=Math.abs(touchStartX.current - e.touches[0].clientX); if(diff>10) e.preventDefault(); } }}
                         onTouchEnd={e=>{
                           if(touchStartX.current===null) return;
                           const diff = touchStartX.current - e.changedTouches[0].clientX;
@@ -1804,13 +1805,15 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
               </div>
               {/* Image */}
               {imgs[0]&&(
-                <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                <div style={{position:"relative",width:"100%",aspectRatio:"1/1",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
                   <img src={imgs[0]} alt="" loading="lazy"
-                    style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                    style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
                     onError={e=>{e.target.style.display="none";}}
                   />
                   {imgs.length>1&&(
-                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>1/{imgs.length}</div>
+                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.55)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,backdropFilter:"blur(4px)"}}>
+                      <span style={{fontSize:13}}>❐</span> {imgs.length}
+                    </div>
                   )}
                 </div>
               )}
@@ -1822,9 +1825,9 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
                   <div style={{marginLeft:"auto",fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>LESEN →</div>
                 </div>
                 {totalReactions>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12,fontWeight:700,color:"rgba(245,237,232,.9)",marginBottom:4}}>{totalReactions} Reaktion{totalReactions!==1?"en":""}</div>}
-                <div style={{marginBottom:4,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:G.gold,marginRight:6}}>{entry.title}</span>
-                  {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.65)"}}>{(entry.content||"").slice(0,80)}{(entry.content||"").length>80?"…":""}</span>}
+                <div style={{marginBottom:6,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:G.gold,letterSpacing:.5}}>{entry.title} </span>
+                  {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)"}}>{(entry.content||"").slice(0,100)}{(entry.content||"").length>100?"…":""}</span>}
                 </div>
                 {commentCount>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>Alle {commentCount} Kommentare anzeigen</div>}
               </div>
