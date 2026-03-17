@@ -1782,7 +1782,8 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
       <div style={{display:"flex",flexDirection:"column",gap:0}}>
         {entries.map(entry=>{
           let imgs=[];
-          try{imgs=JSON.parse(entry.image_url);}catch(e){if(entry.image_url)imgs=[entry.image_url];}
+          try{ const parsed=JSON.parse(entry.image_url); imgs=Array.isArray(parsed)?parsed:(parsed?[parsed]:[]); }catch(e){ imgs=entry.image_url?[entry.image_url]:[]; }
+          if(!Array.isArray(imgs)) imgs=[];
           let totalReactions=0;
           try{const rv=entryReactions[entry.id]; if(rv)totalReactions=Object.values(rv).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch(e){}
           const commentCount=Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
