@@ -375,32 +375,29 @@ export default function App({ user, onLogout }) {
 
   const loadBible = async()=>{
     setLoadingBible(true);
+    // Load entries first - show immediately
     const{data}=await supabase.from("library").select("*").order("created_at",{ascending:false});
-    if(data){
-      setBibleEntries(data);
-      // Load reads for current user
-      const{data:reads}=await supabase.from("entry_reads").select("entry_id").eq("user_id",user.id);
-      if(reads){ const r={}; reads.forEach(x=>r[x.entry_id]=true); setReadEntries(r); }
-      // Load reactions for all entries
-      const{data:reactions}=await supabase.from("entry_reactions").select("entry_id,emoji,username");
-      if(reactions){
-        const grouped={};
-        reactions.forEach(r=>{
-          if(!grouped[r.entry_id]) grouped[r.entry_id]={};
-          if(!grouped[r.entry_id][r.emoji]) grouped[r.entry_id][r.emoji]=[];
-          if(!grouped[r.entry_id][r.emoji].includes(r.username)) grouped[r.entry_id][r.emoji].push(r.username);
-        });
-        setEntryReactions(grouped);
-      }
-      // Load comment counts
-      const{data:comments}=await supabase.from("entry_comments").select("entry_id,id");
-      if(comments){
-        const grouped={};
-        comments.forEach(c=>{ if(!grouped[c.entry_id]) grouped[c.entry_id]=[]; grouped[c.entry_id].push(c.id); });
-        setEntryComments(prev=>({...prev,...grouped}));
-      }
-    }
+    if(data) setBibleEntries(data);
     setLoadingBible(false);
+    // Load social data in background (non-blocking)
+    try{
+      const[readsRes,reactRes,commRes]=await Promise.all([
+        supabase.from("entry_reads").select("entry_id").eq("user_id",user.id),
+        supabase.from("entry_reactions").select("entry_id,emoji,username"),
+        supabase.from("entry_comments").select("entry_id,id"),
+      ]);
+      if(readsRes.data){ const r={}; readsRes.data.forEach(x=>r[x.entry_id]=true); setReadEntries(r); }
+      if(reactRes.data){
+        const g={};
+        reactRes.data.forEach(r=>{ if(!g[r.entry_id])g[r.entry_id]={}; if(!g[r.entry_id][r.emoji])g[r.entry_id][r.emoji]=[]; if(!g[r.entry_id][r.emoji].includes(r.username))g[r.entry_id][r.emoji].push(r.username); });
+        setEntryReactions(g);
+      }
+      if(commRes.data){
+        const g={};
+        commRes.data.forEach(c=>{ if(!g[c.entry_id])g[c.entry_id]=[]; g[c.entry_id].push(c.id); });
+        setEntryComments(g);
+      }
+    }catch(e){ console.warn("Social load failed:",e); }
   };
 
   const markRead = async(entryId)=>{
