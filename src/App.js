@@ -1371,9 +1371,8 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     <div style={{position:"relative",marginBottom:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
                       {/* Main image */}
                       <div
-                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)",cursor:"pointer",touchAction:"pan-y"}}
-                        onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; e.stopPropagation(); }}
-                        onTouchMove={e=>{ if(touchStartX.current!==null){ const diff=Math.abs(touchStartX.current - e.touches[0].clientX); if(diff>10) e.preventDefault(); } }}
+                        style={{position:"relative",width:"100%",paddingBottom:"100%",background:"rgba(3,2,1,.8)",cursor:"pointer",touchAction:"pan-y pinch-zoom"}}
+                        onTouchStart={e=>{ touchStartX.current = e.touches[0].clientX; }}
                         onTouchEnd={e=>{
                           if(touchStartX.current===null) return;
                           const diff = touchStartX.current - e.changedTouches[0].clientX;
@@ -1805,14 +1804,14 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
               </div>
               {/* Image */}
               {imgs[0]&&(
-                <div style={{position:"relative",width:"100%",aspectRatio:"1/1",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                <div style={{position:"relative",width:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
                   <img src={imgs[0]} alt="" loading="lazy"
-                    style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                    style={{width:"100%",maxHeight:"80vw",objectFit:"cover",display:"block"}}
                     onError={e=>{e.target.style.display="none";}}
                   />
                   {imgs.length>1&&(
-                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.55)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,backdropFilter:"blur(4px)"}}>
-                      <span style={{fontSize:13}}>❐</span> {imgs.length}
+                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{fontSize:12}}>❐</span>{imgs.length}
                     </div>
                   )}
                 </div>
