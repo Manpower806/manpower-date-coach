@@ -1,10 +1,8 @@
-// Manpower Service Worker v2 - iOS compatible
+// Manpower Service Worker v3 - Push + iOS compatible
+
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
   const method = event.request.method;
-
-  // Don't intercept API calls AT ALL - let browser handle natively
-  // This fixes "Returned response is null" on iOS
   if (
     url.includes('anthropic.com') ||
     url.includes('supabase.co') ||
@@ -14,12 +12,41 @@ self.addEventListener('fetch', (event) => {
     method === 'DELETE' ||
     method === 'PUT'
   ) {
-    return; // No event.respondWith = browser handles it directly
+    return;
   }
-
-  // Only cache static GET assets
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
+  );
+});
+
+// Handle incoming push notifications
+self.addEventListener('push', (event) => {
+  let data = { title: 'MANPOWER BRUDERSCHAFT', body: '👑 Neue Nachricht' };
+  try { data = event.data.json(); } catch {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || 'manpower',
+      renotify: true,
+      vibrate: [200, 100, 200],
+      data: { url: '/' },
+    })
+  );
+});
+
+// Click on notification opens the app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url === '/' && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
   );
 });
 
