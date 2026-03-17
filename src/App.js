@@ -396,8 +396,8 @@ export default function App({ user, onLogout }) {
       const{data:comments}=await supabase.from("entry_comments").select("entry_id,id");
       if(comments){
         const grouped={};
-        comments.forEach(c=>{ if(!grouped[c.entry_id]) grouped[c.entry_id]=[]; grouped[c.entry_id].push(c); });
-        setEntryComments(grouped);
+        comments.forEach(c=>{ if(!grouped[c.entry_id]) grouped[c.entry_id]=[]; grouped[c.entry_id].push(c.id); });
+        setEntryComments(prev=>({...prev,...grouped}));
       }
     }
     setLoadingBible(false);
@@ -1616,8 +1616,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     {bibleEntries.map(entry=>{
                       let imgs=[];
                       try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
-                      const totalReactions = Object.values(entryReactions[entry.id]||{}).reduce((a,b)=>a+b.length,0);
-                      const commentCount = entryComments[entry.id]?.length||0;
+                      let totalReactions = 0;
+                      try{ totalReactions = Object.values(entryReactions[entry.id]||{}).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0); }catch{}
+                      const commentCount = Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
                       return (
                         <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",marginBottom:0,background:"rgba(3,2,1,.6)"}}>
                           {/* Instagram Header */}
