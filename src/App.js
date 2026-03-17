@@ -1777,16 +1777,17 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 // ── COMPONENTS ──────────────────────────────────────────────────────────────
 const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12};
 function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen}) {
-  try {
-    return (
+  if(!entries||!entries.length) return null;
+  try { return (
       <div style={{display:"flex",flexDirection:"column",gap:0}}>
         {entries.map(entry=>{
           let imgs=[];
-          try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
+          try{imgs=JSON.parse(entry.image_url);}catch(e){if(entry.image_url)imgs=[entry.image_url];}
           let totalReactions=0;
-          try{totalReactions=Object.values(entryReactions[entry.id]||{}).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch{}
+          try{const rv=entryReactions[entry.id]; if(rv)totalReactions=Object.values(rv).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch(e){}
           const commentCount=Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
-          const hasReacted=(entryReactions[entry.id]?.["🔥"]||[]).includes(user?.username);
+          const fireReactors=entryReactions[entry.id]&&entryReactions[entry.id]["🔥"];
+          const hasReacted=Array.isArray(fireReactors)&&fireReactors.includes(user&&user.username);
           return (
             <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",background:"rgba(3,2,1,.6)"}}>
               {/* Header */}
@@ -1831,10 +1832,11 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
         })}
       </div>
     );
-  } catch(e) {
-    return <div style={{color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:9,textAlign:"center",padding:20}}>LADE BEITRÄGE…</div>;
+  } catch(err) {
+    return <div style={{color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,padding:16,textAlign:"center"}}>Fehler: {err&&err.message}</div>;
   }
 }
+
 
 function SL({children}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.75)",marginBottom:8,textTransform:"uppercase",fontWeight:600}}>{children}</div>;}
 function SecTitle({icon,title,sub}){return(
