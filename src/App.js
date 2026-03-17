@@ -376,7 +376,30 @@ export default function App({ user, onLogout }) {
   const loadBible = async()=>{
     setLoadingBible(true);
     const{data}=await supabase.from("library").select("*").order("created_at",{ascending:false});
-    if(data) setBibleEntries(data);
+    if(data){
+      setBibleEntries(data);
+      // Load reads for current user
+      const{data:reads}=await supabase.from("entry_reads").select("entry_id").eq("user_id",user.id);
+      if(reads){ const r={}; reads.forEach(x=>r[x.entry_id]=true); setReadEntries(r); }
+      // Load reactions for all entries
+      const{data:reactions}=await supabase.from("entry_reactions").select("entry_id,emoji,username");
+      if(reactions){
+        const grouped={};
+        reactions.forEach(r=>{
+          if(!grouped[r.entry_id]) grouped[r.entry_id]={};
+          if(!grouped[r.entry_id][r.emoji]) grouped[r.entry_id][r.emoji]=[];
+          if(!grouped[r.entry_id][r.emoji].includes(r.username)) grouped[r.entry_id][r.emoji].push(r.username);
+        });
+        setEntryReactions(grouped);
+      }
+      // Load comment counts
+      const{data:comments}=await supabase.from("entry_comments").select("entry_id,id");
+      if(comments){
+        const grouped={};
+        comments.forEach(c=>{ if(!grouped[c.entry_id]) grouped[c.entry_id]=[]; grouped[c.entry_id].push(c); });
+        setEntryComments(grouped);
+      }
+    }
     setLoadingBible(false);
   };
 
@@ -1589,27 +1612,73 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     {isAdmin&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12}}>Erstelle den ersten Beitrag mit dem Button oben</div>}
                   </div>
                 ):(
-                  <div style={{display:"flex",flexDirection:"column",gap:9}}>
-                    {bibleEntries.map(entry=>(
-                      <div key={entry.id} className="rc" onClick={()=>openEntry(entry)}
-                        style={{...gc,overflow:"hidden",borderColor:"rgba(212,175,55,.16)",background:"rgba(3,2,1,.74)"}}>
-                        {entry.image_url&&(()=>{
-                          let imgs=[];
-                          try{imgs=JSON.parse(entry.image_url);}catch{imgs=[entry.image_url];}
-                          return imgs[0]&&<img src={imgs[0]} alt="" style={{width:"100%",height:130,objectFit:"cover",display:"block"}}/>;
-                        })()}
-                        <div style={{padding:"12px 13px"}}>
-                          <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:G.gold,marginBottom:5,lineHeight:1.4}}>{entry.title}</div>
-                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-                            {entry.content}
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    {bibleEntries.map(entry=>{
+                      let imgs=[];
+                      try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
+                      const totalReactions = Object.values(entryReactions[entry.id]||{}).reduce((a,b)=>a+b.length,0);
+                      const commentCount = entryComments[entry.id]?.length||0;
+                      return (
+                        <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",marginBottom:0,background:"rgba(3,2,1,.6)"}}>
+                          {/* Instagram Header */}
+                          <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px"}}>
+                            <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#D4AF37,#8B6914)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid rgba(212,175,55,.4)"}}>
+                              <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:"#0a0806"}}>M</span>
+                            </div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:1}}>MANPOWER</div>
+                              <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.4)"}}>Bruderschaft</div>
+                            </div>
+                            {readEntries[entry.id]&&<div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(92,184,122,.7)",letterSpacing:1}}>✓</div>}
                           </div>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
-                            {readEntries[entry.id]&&<div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(92,184,122,.7)",letterSpacing:1}}>✓ GELESEN</div>}
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:8,color:G.gold,letterSpacing:1,marginLeft:"auto"}}>LESEN →</div>
+
+                          {/* Image - full width, square like Instagram */}
+                          {imgs[0]&&(
+                            <div style={{position:"relative",width:"100%",paddingBottom:"100%",background:"#000",overflow:"hidden"}} onClick={()=>openEntry(entry)}>
+                              <img src={imgs[0]} alt=""
+                                loading="lazy"
+                                style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                                onError={e=>{e.target.style.display="none";}}
+                              />
+                              {imgs.length>1&&(
+                                <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,backdropFilter:"blur(4px)"}}>
+                                  1/{imgs.length}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action bar */}
+                          <div style={{padding:"10px 12px 4px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+                              <span onClick={()=>toggleReaction(entry.id,"🔥")} style={{cursor:"pointer",fontSize:22,opacity:(entryReactions[entry.id]?.["🔥"]||[]).includes(user.username)?1:0.45}}>🔥</span>
+                              <span onClick={()=>{openEntry(entry);setTimeout(()=>setShowComments(true),300);}} style={{cursor:"pointer",fontSize:20,opacity:0.55}}>💬</span>
+                              <div style={{marginLeft:"auto",fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.4)",letterSpacing:1,cursor:"pointer"}} onClick={()=>openEntry(entry)}>LESEN →</div>
+                            </div>
+
+                            {/* Likes count */}
+                            {totalReactions>0&&(
+                              <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,fontWeight:700,color:"rgba(245,237,232,.9)",marginBottom:4}}>
+                                {totalReactions} Reaktion{totalReactions!==1?"en":""}
+                              </div>
+                            )}
+
+                            {/* Caption */}
+                            <div style={{marginBottom:4}} onClick={()=>openEntry(entry)}>
+                              <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:G.gold,marginRight:6}}>{entry.title}</span>
+                              {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.65)",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{entry.content}</span>}
+                            </div>
+
+                            {/* Comments preview */}
+                            {commentCount>0&&(
+                              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.4)",marginBottom:4,cursor:"pointer"}} onClick={()=>openEntry(entry)}>
+                                Alle {commentCount} Kommentare anzeigen
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </>
