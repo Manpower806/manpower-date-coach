@@ -1709,7 +1709,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
         const blendActive=(i)=>{try{return JSON.parse(selectedEntry?.blend_modes||"[]")[i]||false;}catch{return false;}};
         const bgImg=selectedEntry?.bg_image;
         return (
-          <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.96)",display:"flex",flexDirection:"column"}}
+          <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.96)",display:"flex",flexDirection:"column",touchAction:"none",overscrollBehavior:"none"}}
             onTouchStart={e=>{modalTouchX.current=e.touches[0].clientX;}}
             onTouchEnd={e=>{
               const dx=modalTouchX.current-e.changedTouches[0].clientX;
@@ -1779,62 +1779,107 @@ const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBac
 function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen}) {
   if(!entries||!entries.length) return null;
   try { return (
-      <div style={{display:"flex",flexDirection:"column",gap:0}}>
-        {entries.map(entry=>{
-          let imgs=[];
-          try{ const parsed=JSON.parse(entry.image_url); imgs=Array.isArray(parsed)?parsed:(parsed?[parsed]:[]); }catch(e){ imgs=entry.image_url?[entry.image_url]:[]; }
-          if(!Array.isArray(imgs)) imgs=[];
-          let totalReactions=0;
-          try{const rv=entryReactions[entry.id]; if(rv)totalReactions=Object.values(rv).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch(e){}
-          const commentCount=Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
-          const fireReactors=entryReactions[entry.id]&&entryReactions[entry.id]["🔥"];
-          const hasReacted=Array.isArray(fireReactors)&&fireReactors.includes(user&&user.username);
-          return (
-            <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",background:"rgba(3,2,1,.6)"}}>
-              {/* Header */}
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px"}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#D4AF37,#8B6914)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid rgba(212,175,55,.4)"}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:"#0a0806"}}>M</span>
+    <div style={{display:"flex",flexDirection:"column",background:"transparent"}}>
+      {entries.map(entry=>{
+        let imgs=[];
+        try{ const p=JSON.parse(entry.image_url); imgs=Array.isArray(p)?p:(p?[p]:[]); }catch(e){ imgs=entry.image_url?[entry.image_url]:[]; }
+        if(!Array.isArray(imgs)) imgs=[];
+        let totalReactions=0;
+        try{const rv=entryReactions[entry.id]; if(rv)totalReactions=Object.values(rv).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0);}catch(e){}
+        const commentCount=Array.isArray(entryComments[entry.id])?entryComments[entry.id].length:0;
+        const fireReactors=entryReactions[entry.id]&&entryReactions[entry.id]["🔥"];
+        const hasReacted=Array.isArray(fireReactors)&&fireReactors.includes(user&&user.username);
+        return (
+          <div key={entry.id} style={{borderBottom:"1px solid rgba(212,175,55,.1)",background:"rgba(0,0,0,.85)",marginBottom:10,borderRadius:4,overflow:"hidden"}}>
+            {/* Header - Instagram style */}
+            <div style={{display:"flex",alignItems:"center",padding:"10px 12px",gap:10}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(45deg,#D4AF37,#8B6914,#F5E27A)",padding:2,flexShrink:0}}>
+                <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37"}}>M</span>
                 </div>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:1}}>MANPOWER</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.4)"}}>Bruderschaft</div>
-                </div>
-                {readEntries[entry.id]&&<span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(92,184,122,.7)"}}>✓</span>}
               </div>
-              {/* Image */}
-              {imgs[0]&&(
-                <div style={{position:"relative",width:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
-                  <img src={imgs[0]} alt="" loading="lazy"
-                    style={{width:"100%",maxHeight:"80vw",objectFit:"cover",display:"block"}}
-                    onError={e=>{e.target.style.display="none";}}
-                  />
-                  {imgs.length>1&&(
-                    <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.6)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:12}}>❐</span>{imgs.length}
-                    </div>
-                  )}
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#fff",letterSpacing:.5}}>manpower_bruderschaft</div>
+                {readEntries[entry.id]&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(92,184,122,.8)"}}>✓ gelesen</div>}
+              </div>
+              <div style={{fontSize:20,color:"rgba(255,255,255,.6)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>···</div>
+            </div>
+
+            {/* Image */}
+            {imgs[0]&&(
+              <div style={{position:"relative",width:"100%",background:"#111",overflow:"hidden",cursor:"pointer",userSelect:"none"}}
+                onClick={()=>onOpen(entry)}>
+                <img src={imgs[0]} alt="" loading="lazy"
+                  style={{width:"100%",display:"block",maxHeight:"90vw",objectFit:"cover"}}
+                  onError={e=>{e.target.style.display="none";}}
+                  draggable="false"
+                />
+                {imgs.length>1&&(
+                  <div style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,.7)",color:"#fff",fontFamily:"'Lato',sans-serif",fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:12}}>
+                    1/{imgs.length}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action bar - Instagram style */}
+            <div style={{padding:"8px 12px 4px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
+                {/* Heart/Fire */}
+                <button onClick={()=>onReact(entry.id,"🔥")}
+                  style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:26,filter:hasReacted?"none":"grayscale(1) opacity(0.5)"}}>{hasReacted?"🔥":"🤍"}</span>
+                </button>
+                {/* Comment */}
+                <button onClick={()=>onCommentOpen(entry)}
+                  style={{background:"none",border:"none",cursor:"pointer",padding:0}}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                {/* LESEN */}
+                <button onClick={()=>onOpen(entry)}
+                  style={{background:"none",border:"none",cursor:"pointer",padding:0}}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" strokeWidth="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+                {/* Bookmark */}
+                <button style={{background:"none",border:"none",cursor:"pointer",padding:0,marginLeft:"auto"}}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Likes */}
+              {totalReactions>0&&(
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:5}}>
+                  {totalReactions} {totalReactions===1?"Reaktion":"Reaktionen"}
                 </div>
               )}
-              {/* Actions */}
-              <div style={{padding:"10px 12px 4px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
-                  <span onClick={()=>onReact(entry.id,"🔥")} style={{cursor:"pointer",fontSize:22,opacity:hasReacted?1:0.45}}>🔥</span>
-                  <span onClick={()=>onCommentOpen(entry)} style={{cursor:"pointer",fontSize:20,opacity:0.55}}>💬</span>
-                  <div style={{marginLeft:"auto",fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>LESEN →</div>
-                </div>
-                {totalReactions>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12,fontWeight:700,color:"rgba(245,237,232,.9)",marginBottom:4}}>{totalReactions} Reaktion{totalReactions!==1?"en":""}</div>}
-                <div style={{marginBottom:6,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:900,color:G.gold,letterSpacing:.5}}>{entry.title} </span>
-                  {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)"}}>{(entry.content||"").slice(0,100)}{(entry.content||"").length>100?"…":""}</span>}
-                </div>
-                {commentCount>0&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.4)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>Alle {commentCount} Kommentare anzeigen</div>}
+
+              {/* Caption */}
+              <div style={{marginBottom:4,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                <span style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginRight:6}}>manpower_bruderschaft</span>
+                <span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.85)"}}>{(entry.title||"")}</span>
+                {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.6)"}}> {(entry.content||"").slice(0,80)}{(entry.content||"").length>80?"…":""}</span>}
               </div>
+
+              {/* Comments */}
+              {commentCount>0&&(
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.4)",marginBottom:4,cursor:"pointer"}} onClick={()=>onCommentOpen(entry)}>
+                  Alle {commentCount} Kommentare anzeigen
+                </div>
+              )}
+
+
             </div>
-          );
-        })}
-      </div>
-    );
+          </div>
+        );
+      })}
+    </div>
+  );
   } catch(err) {
     return <div style={{color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,padding:16,textAlign:"center"}}>Fehler: {err&&err.message}</div>;
   }
