@@ -40,9 +40,61 @@ export default function Login({ onLogin }) {
   const [error,    setError]    = useState(null);
   const [showPw,   setShowPw]   = useState(false);
   const [lang,     setLang]     = useState(()=>localStorage.getItem("mp_lang")||"de");
+  const [mode,     setMode]     = useState(()=>{ const p=new URLSearchParams(window.location.search); return p.get("invite")?"register":"login"; });
+  const [inviteCode, setInviteCode] = useState(()=>{ const p=new URLSearchParams(window.location.search); return p.get("invite")||""; });
+  const [regUser,  setRegUser]  = useState("");
+  const [regPass,  setRegPass]  = useState("");
+  const [regPass2, setRegPass2] = useState("");
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState(null);
+  const [regSuccess, setRegSuccess] = useState(false);
   const [langOpen,  setLangOpen]  = useState(false);
   const t = LANGS[lang] || LANGS.de;
   const changeLang = (l) => { setLang(l); localStorage.setItem("mp_lang", l); setError(null); };
+
+  const handleRegister = async(e) => {
+    e.preventDefault();
+    if(!regUser.trim()||!regPass.trim()) { setRegError("Bitte alle Felder ausfüllen."); return; }
+    if(regPass !== regPass2) { setRegError("Passwörter stimmen nicht überein."); return; }
+    if(regUser.trim().length < 3) { setRegError("Username mindestens 3 Zeichen."); return; }
+    if(regPass.length < 6) { setRegError("Passwort mindestens 6 Zeichen."); return; }
+    setRegLoading(true); setRegError(null);
+
+    // Check invite code
+    const{data:invite, error:invErr} = await supabase
+      .from("invite_links")
+      .select("*")
+      .eq("code", inviteCode.toUpperCase().trim())
+      .single();
+
+    if(invErr||!invite) { setRegError("Ungültiger Einladungslink."); setRegLoading(false); return; }
+    if(invite.used_by) { setRegError("Dieser Einladungslink wurde bereits verwendet."); setRegLoading(false); return; }
+    if(new Date(invite.expires_at) < new Date()) { setRegError("Dieser Einladungslink ist abgelaufen."); setRegLoading(false); return; }
+
+    // Check username not taken
+    const{data:existing} = await supabase.from("members").select("id").eq("username", regUser.trim().toLowerCase()).single();
+    if(existing) { setRegError("Dieser Username ist bereits vergeben."); setRegLoading(false); return; }
+
+    // Create member
+    const{error:createErr} = await supabase.from("members").insert({
+      username: regUser.trim().toLowerCase(),
+      password: regPass.trim(),
+      active: true,
+      notes: "",
+    });
+    if(createErr) { setRegError("Fehler beim Erstellen: " + createErr.message); setRegLoading(false); return; }
+
+    // Mark invite as used
+    await supabase.from("invite_links").update({
+      used_by: regUser.trim().toLowerCase(),
+      used_at: new Date().toISOString()
+    }).eq("code", inviteCode.toUpperCase().trim());
+
+    setRegSuccess(true);
+    setRegLoading(false);
+    // Clear invite from URL
+    window.history.replaceState({}, "", "/");
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -195,6 +247,50 @@ export default function Login({ onLogin }) {
 
         {/* Form */}
         <div style={{ background:"rgba(12,8,2,.85)",border:"1px solid rgba(212,175,55,.18)",borderRadius:4,padding:"18px 22px",backdropFilter:"blur(20px)" }}>
+          {mode==="register"&&regSuccess?(
+            <div style={{textAlign:"center",padding:"20px 0"}}>
+              <div style={{fontSize:48,marginBottom:12}}>👑</div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37",marginBottom:8,letterSpacing:3}}>WILLKOMMEN</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)",marginBottom:20}}>Dein Account wurde erstellt. Du kannst dich jetzt einloggen.</div>
+              <button onClick={()=>{setMode("login");setRegSuccess(false);}} style={{background:"linear-gradient(135deg,#6B4F0A,#D4AF37)",border:"none",borderRadius:4,padding:"12px 24px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:10,letterSpacing:3,cursor:"pointer"}}>
+                ZUM LOGIN →
+              </button>
+            </div>
+          ):mode==="register"?(
+            <>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,justifyContent:"center"}}>
+                <div style={{flex:1,height:1,background:"rgba(212,175,55,.15)"}}/>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:4,color:"rgba(212,175,55,.5)"}}>REGISTRIEREN</span>
+                <div style={{flex:1,height:1,background:"rgba(212,175,55,.15)"}}/>
+              </div>
+              {inviteCode&&<div style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",borderRadius:4,padding:"8px 12px",marginBottom:12,fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.6)",textAlign:"center"}}>🔗 Einladungscode: <strong style={{color:"#D4AF37"}}>{inviteCode.toUpperCase()}</strong></div>}
+              <form onSubmit={handleRegister}>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7}}>BENUTZERNAME</div>
+                  <input className="linput" value={regUser} onChange={e=>setRegUser(e.target.value)} placeholder="dein-name"
+                    style={{width:"100%",background:"rgba(0,0,0,.5)",border:"1px solid rgba(212,175,55,.2)",borderRadius:2,padding:"12px 14px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14}}/>
+                </div>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7}}>PASSWORT</div>
+                  <input className="linput" type="password" value={regPass} onChange={e=>setRegPass(e.target.value)} placeholder="min. 6 Zeichen"
+                    style={{width:"100%",background:"rgba(0,0,0,.5)",border:"1px solid rgba(212,175,55,.2)",borderRadius:2,padding:"12px 14px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14}}/>
+                </div>
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:7}}>PASSWORT WIEDERHOLEN</div>
+                  <input className="linput" type="password" value={regPass2} onChange={e=>setRegPass2(e.target.value)} placeholder="••••••"
+                    style={{width:"100%",background:"rgba(0,0,0,.5)",border:"1px solid rgba(212,175,55,.2)",borderRadius:2,padding:"12px 14px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14}}/>
+                </div>
+                {regError&&<div style={{background:"rgba(180,40,40,.15)",border:"1px solid rgba(200,60,60,.3)",borderRadius:2,padding:"10px 14px",color:"#ff8080",fontFamily:"'Lato',sans-serif",fontSize:12,marginBottom:12,textAlign:"center"}}>{regError}</div>}
+                <button className="lbtn" type="submit" disabled={regLoading}
+                  style={{width:"100%",background:regLoading?"rgba(212,175,55,.08)":"linear-gradient(135deg,#6B4F0A 0%,#D4AF37 35%,#F5E27A 50%,#D4AF37 65%,#6B4F0A 100%)",backgroundSize:"200% auto",animation:regLoading?"none":"shimmer 3s linear infinite",border:"none",borderRadius:2,padding:"15px",color:regLoading?"rgba(212,175,55,.3)":"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:12,letterSpacing:5,cursor:regLoading?"not-allowed":"pointer"}}>
+                  {regLoading?"ERSTELLE ACCOUNT…":"👑  BEITRETEN"}
+                </button>
+              </form>
+              <div style={{textAlign:"center",marginTop:12}}>
+                <button onClick={()=>{setMode("login");setRegError(null);}} style={{background:"none",border:"none",color:"rgba(212,175,55,.4)",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,cursor:"pointer"}}>← ZURÜCK ZUM LOGIN</button>
+              </div>
+            </>
+          ):(
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14,justifyContent:"center" }}>
             <div style={{ flex:1,height:1,background:"rgba(212,175,55,.15)" }}/>
             <span style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:5,color:"rgba(212,175,55,.5)" }}>{t.access}</span>
@@ -222,6 +318,8 @@ export default function Login({ onLogin }) {
               {loading?t.checking:"🔑  "+t.btn}
             </button>
           </form>
+        </div>
+          )}
         </div>
         <div style={{ textAlign:"center",marginTop:10 }}>
           <span style={{ fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:4,color:"rgba(212,175,55,.2)" }}>{t.bottom}</span>
