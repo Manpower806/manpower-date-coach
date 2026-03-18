@@ -536,6 +536,7 @@ Antworte NUR mit dem Kategorienamen, ohne Erklärung.`}]
       setSaveStatus(`${done}/${uncategorized.length} kategorisiert…`);
     }
     setSaveStatus("");
+    setBibleCategory("alle");
     await loadBible();
     alert("✅ Fertig! Alle Beiträge wurden kategorisiert.");
   };
@@ -819,13 +820,13 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           </div>
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:14}}>BRUDERSCHAFT</div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"nowrap",overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2,maxWidth:"100%"}}>
             <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px"}}>
               <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"}</span>
               <span style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:2,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{user?.username?.toUpperCase()}</span>
             </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
-            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} Analysen · {localMem.totalOpeners||0} Opener</span>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:0,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} · {localMem.totalOpeners||0}</span>
             {isAdmin&&<button onClick={()=>{setShowAdminPanel(true);loadAdminData();}} style={{background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"#e8a0b0",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16}}>⚙️ ADMIN</button>}
             {"serviceWorker" in navigator && "PushManager" in window && (
               <button onClick={pushEnabled?unsubscribePush:subscribePush} disabled={pushLoading}
