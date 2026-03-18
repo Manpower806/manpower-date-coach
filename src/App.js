@@ -498,28 +498,39 @@ export default function App({ user, onLogout }) {
     setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
 
-  const autoCategorizPost = async(title, content)=>{
-    if(!title && !content) return "";
+  const autoCategorizPost = async(title, textContent)=>{
+    if(!title && !textContent) return "Mindset"; // default fallback
     try {
       const res = await fetch("/api/claude", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514",
-          max_tokens:50,
-          messages:[{role:"user",content:`Analysiere diesen Beitragstitel und -inhalt und ordne ihn GENAU EINER dieser Kategorien zu: Mindset, Dating, Frauen, Finanzen, Fitness, Lifestyle.
+          max_tokens:10,
+          messages:[{role:"user",content:`Kategorisiere diesen Beitrag in GENAU EINE Kategorie.
 
-Titel: "${title}"
-Inhalt: "${(content||"").slice(0,200)}"
+Kategorien: Mindset, Dating, Frauen, Finanzen, Fitness, Lifestyle
 
-Antworte NUR mit dem Kategorienamen, ohne Erklärung.`}]
+Titel: "${title||""}"
+${textContent?`Inhalt: "${(textContent||"").slice(0,300)}"`:""} 
+
+Regeln:
+- Frauen/Beziehungen/Dynamik → "Frauen" oder "Dating"
+- Motivation/Erfolg/Mentalität → "Mindset"  
+- Geld/Business/Investitionen → "Finanzen"
+- Sport/Ernährung/Körper → "Fitness"
+- Reisen/Mode/Stil → "Lifestyle"
+
+Antworte mit NUR einem Wort.`}]
         })
       });
       const data = await res.json();
-      const cat = data.content?.[0]?.text?.trim()||"";
+      const cat = (data.content?.[0]?.text||"").trim().replace(/[^a-zA-ZäöüÄÖÜ]/g,"");
       const valid = ["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"];
-      return valid.find(v=>cat.toLowerCase().includes(v.toLowerCase()))||"";
-    } catch(e){ return ""; }
+      return valid.find(v=>cat.toLowerCase()===v.toLowerCase()) || 
+             valid.find(v=>cat.toLowerCase().includes(v.toLowerCase())) || 
+             "Mindset";
+    } catch(e){ return "Mindset"; }
   };
 
   const bulkCategorize = async()=>{
