@@ -318,7 +318,6 @@ export default function Login({ onLogin }) {
               {loading?t.checking:"🔑  "+t.btn}
             </button>
           </form>
-        </div>
           )}
         </div>
         <div style={{ textAlign:"center",marginTop:10 }}>
