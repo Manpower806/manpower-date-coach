@@ -170,6 +170,9 @@ export default function App({ user, onLogout }) {
   const [newCategory, setNewCategory] = useState("");
   const [showStats, setShowStats] = useState(false);
   const [showInvites, setShowInvites] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profile, setProfile] = useState({display_name:"",city:"",bio:"",avatar_color:""});
+  const [savingProfile, setSavingProfile] = useState(false);
   const [inviteLinks, setInviteLinks] = useState([]);
   const [generatingInvite, setGeneratingInvite] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -310,6 +313,8 @@ export default function App({ user, onLogout }) {
     }
     // Check push status
     if(localStorage.getItem("mp_push_enabled")) setPushEnabled(true);
+    // Load profile
+    loadProfile();
     // Daily motivation - show once per day
     const today = new Date().toDateString();
     const lastShown = localStorage.getItem("mp_motiv_date_"+user?.username);
@@ -499,6 +504,28 @@ export default function App({ user, onLogout }) {
       reader.readAsDataURL(file);
     })));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
+  };
+
+  const loadProfile = async()=>{
+    const{data}=await supabase.from("members").select("display_name,city,bio,avatar_color").eq("id",user.id).single();
+    if(data) setProfile({
+      display_name:data.display_name||"",
+      city:data.city||"",
+      bio:data.bio||"",
+      avatar_color:data.avatar_color||"#D4AF37"
+    });
+  };
+
+  const saveProfile = async()=>{
+    setSavingProfile(true);
+    await supabase.from("members").update({
+      display_name: profile.display_name.trim(),
+      city: profile.city.trim(),
+      bio: profile.bio.trim(),
+      avatar_color: profile.avatar_color||"#D4AF37",
+    }).eq("id",user.id);
+    setSavingProfile(false);
+    setShowProfile(false);
   };
 
   const loadInvites = async()=>{
@@ -865,9 +892,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:14}}>BRUDERSCHAFT</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"nowrap",overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2,maxWidth:"100%"}}>
-            <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px"}}>
+            <div onClick={()=>{setShowProfile(true);loadProfile();}} style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px",cursor:"pointer"}}>
               <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"}</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:2,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{user?.username?.toUpperCase()}</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:2,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{profile.display_name||user?.username?.toUpperCase()}</span>
             </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:0,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} · {localMem.totalOpeners||0}</span>
@@ -1830,6 +1857,58 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
         </div>
       </div>
+
+      {/* ── PROFIL MODAL ── */}
+      {showProfile&&(
+        <div style={{position:"fixed",inset:0,zIndex:9998,background:"rgba(0,0,0,.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={e=>{if(e.target===e.currentTarget)setShowProfile(false);}}>
+          <div style={{background:"rgba(12,8,2,.97)",border:"1px solid rgba(212,175,55,.25)",borderRadius:12,padding:"28px 24px",width:"100%",maxWidth:420,animation:"fadeUp .3s ease"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37",letterSpacing:2}}>👤 MEIN PROFIL</div>
+              <button onClick={()=>setShowProfile(false)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:"#D4AF37",padding:"5px 14px",cursor:"pointer",borderRadius:16,fontFamily:"'Cinzel',serif",fontSize:8}}>✕</button>
+            </div>
+
+            {/* Avatar color picker */}
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{width:72,height:72,borderRadius:"50%",background:`linear-gradient(135deg,${profile.avatar_color||"#D4AF37"},#8B6914)`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",border:"3px solid rgba(212,175,55,.3)"}}>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:900,color:"#0a0806"}}>
+                  {(profile.display_name||user?.username||"M")[0].toUpperCase()}
+                </span>
+              </div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)",marginBottom:8}}>FARBE WÄHLEN</div>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                {["#D4AF37","#C0392B","#2980B9","#27AE60","#8E44AD","#E67E22","#1ABC9C","#E91E63"].map(c=>(
+                  <div key={c} onClick={()=>setProfile(p=>({...p,avatar_color:c}))}
+                    style={{width:28,height:28,borderRadius:"50%",background:c,cursor:"pointer",border:profile.avatar_color===c?"3px solid #fff":"3px solid transparent",transition:"all .2s"}}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Fields */}
+            {[
+              ["ANZEIGENAME","display_name","Dein Name (optional)"],
+              ["STADT","city","z.B. Hamburg"],
+              ["BIO","bio","Kurz über dich…"],
+            ].map(([label,key,ph])=>(
+              <div key={key} style={{marginBottom:12}}>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.5)",marginBottom:6}}>{label}</div>
+                {key==="bio"?(
+                  <textarea value={profile[key]} onChange={e=>setProfile(p=>({...p,[key]:e.target.value}))} placeholder={ph} rows={3}
+                    style={{width:"100%",background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.2)",borderRadius:6,padding:"10px 12px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:13,resize:"none"}}/>
+                ):(
+                  <input value={profile[key]} onChange={e=>setProfile(p=>({...p,[key]:e.target.value}))} placeholder={ph}
+                    style={{width:"100%",background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.2)",borderRadius:6,padding:"10px 12px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:13}}/>
+                )}
+              </div>
+            ))}
+
+            <button onClick={saveProfile} disabled={savingProfile}
+              style={{width:"100%",background:"linear-gradient(135deg,#3d2800,#D4AF37,#F5E27A,#D4AF37,#3d2800)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:8,padding:"14px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:savingProfile?"not-allowed":"pointer",marginTop:8}}>
+              {savingProfile?"SPEICHERE…":"💾  PROFIL SPEICHERN"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── ADMIN PANEL ── */}
       {showAdminPanel&&isAdmin&&(
