@@ -291,6 +291,7 @@ export default function Login({ onLogin }) {
               </div>
             </>
           ):(
+          <>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14,justifyContent:"center" }}>
             <div style={{ flex:1,height:1,background:"rgba(212,175,55,.15)" }}/>
             <span style={{ fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:5,color:"rgba(212,175,55,.5)" }}>{t.access}</span>
@@ -318,6 +319,7 @@ export default function Login({ onLogin }) {
               {loading?t.checking:"🔑  "+t.btn}
             </button>
           </form>
+          </>
           )}
         </div>
         <div style={{ textAlign:"center",marginTop:10 }}>
