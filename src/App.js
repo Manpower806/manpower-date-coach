@@ -169,6 +169,9 @@ export default function App({ user, onLogout }) {
   const [bibleCategory, setBibleCategory] = useState("alle");
   const [newCategory, setNewCategory] = useState("");
   const [showStats, setShowStats] = useState(false);
+  const [showInvites, setShowInvites] = useState(false);
+  const [inviteLinks, setInviteLinks] = useState([]);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [dailyMotiv, setDailyMotiv] = useState(null);
 
@@ -496,6 +499,36 @@ export default function App({ user, onLogout }) {
       reader.readAsDataURL(file);
     })));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
+  };
+
+  const loadInvites = async()=>{
+    const{data}=await supabase.from("invite_links").select("*").order("created_at",{ascending:false}).limit(20);
+    if(data) setInviteLinks(data);
+  };
+
+  const generateInvite = async()=>{
+    setGeneratingInvite(true);
+    const code = Math.random().toString(36).slice(2,10).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
+    const expires = new Date(Date.now() + 7*24*60*60*1000).toISOString(); // 7 days
+    const{error}=await supabase.from("invite_links").insert({
+      code, created_by: user.username, expires_at: expires
+    });
+    if(!error){
+      await loadInvites();
+      const link = `${window.location.origin}?invite=${code}`;
+      if(navigator.share){
+        navigator.share({title:"Manpower Bruderschaft Einladung", text:"Du wurdest eingeladen!", url:link});
+      } else {
+        navigator.clipboard.writeText(link).catch(()=>{});
+        alert("✅ Link kopiert:\n" + link);
+      }
+    }
+    setGeneratingInvite(false);
+  };
+
+  const deleteInvite = async(id)=>{
+    await supabase.from("invite_links").delete().eq("id",id);
+    await loadInvites();
   };
 
   const autoCategorizPost = async(title, textContent)=>{
@@ -1257,6 +1290,10 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     style={{flex:1,background:"rgba(92,184,122,.08)",border:"1px solid rgba(92,184,122,.25)",color:"rgba(92,184,122,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3}}>
                     📊 STATS {showStats?"▲":"▼"}
                   </button>
+                  <button onClick={()=>{setShowInvites(s=>!s);if(!showInvites)loadInvites();}}
+                    style={{flex:1,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"rgba(212,175,55,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3}}>
+                    🔗 INVITE {showInvites?"▲":"▼"}
+                  </button>
                 </div>
                 {showStats&&(
                   <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(92,184,122,.2)",background:"rgba(3,2,1,.85)"}}>
@@ -1302,6 +1339,41 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     {saveStatus&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.6)",textAlign:"center",marginTop:8}}>{saveStatus}</div>}
                   </div>
                 )}
+                {showInvites&&(
+                  <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.85)"}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#D4AF37",letterSpacing:2,marginBottom:14}}>🔗 EINLADUNGSLINKS</div>
+                    <button onClick={generateInvite} disabled={generatingInvite}
+                      style={{width:"100%",background:"linear-gradient(135deg,#3d2800,#D4AF37)",border:"none",borderRadius:8,padding:"12px",cursor:generatingInvite?"not-allowed":"pointer",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:"#0a0806",fontWeight:900,marginBottom:12}}>
+                      {generatingInvite?"ERSTELLE…":"➕ NEUEN LINK GENERIEREN"}
+                    </button>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.4)",marginBottom:10}}>Links sind 7 Tage gültig · Einmalig verwendbar</div>
+                    {inviteLinks.map(inv=>{
+                      const used=!!inv.used_by;
+                      const expired=new Date(inv.expires_at)<new Date();
+                      const link=`${window.location.origin}?invite=${inv.code}`;
+                      return (
+                        <div key={inv.id} style={{borderBottom:"1px solid rgba(212,175,55,.08)",padding:"10px 0",display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:2,color:used?"rgba(92,184,122,.7)":expired?"rgba(224,92,106,.6)":"#D4AF37",marginBottom:2}}>
+                              {used?`✅ ${inv.used_by}`:expired?"⏰ ABGELAUFEN":"🟢 AKTIV"} · {inv.code}
+                            </div>
+                            {!used&&!expired&&(
+                              <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.35)",wordBreak:"break-all"}}>{link}</div>
+                            )}
+                          </div>
+                          {!used&&(
+                            <button onClick={()=>{ navigator.clipboard.writeText(link).catch(()=>{}); alert("✅ Kopiert!"); }}
+                              style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:"#D4AF37",padding:"4px 8px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7,flexShrink:0}}>📋</button>
+                          )}
+                          <button onClick={()=>deleteInvite(inv.id)}
+                            style={{background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.2)",color:"#ff8a95",padding:"4px 8px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7,flexShrink:0}}>🗑️</button>
+                        </div>
+                      );
+                    })}
+                    {inviteLinks.length===0&&<div style={{textAlign:"center",color:"rgba(212,175,55,.3)",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,padding:"20px 0"}}>NOCH KEINE LINKS</div>}
+                  </div>
+                )}
+
                 {showAdminPanel&&(
                   <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(201,103,125,.2)",background:"rgba(3,2,1,.85)"}}>
                     <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"rgba(201,103,125,.8)",letterSpacing:2,marginBottom:14}}>👑 ADMIN-PANEL</div>
