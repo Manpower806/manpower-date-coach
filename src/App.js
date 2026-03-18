@@ -522,6 +522,24 @@ Antworte NUR mit dem Kategorienamen, ohne Erklärung.`}]
     } catch(e){ return ""; }
   };
 
+  const bulkCategorize = async()=>{
+    const uncategorized = bibleEntries.filter(e=>!e.category);
+    if(!uncategorized.length){ alert("Alle Beiträge haben bereits eine Kategorie!"); return; }
+    if(!window.confirm(`${uncategorized.length} Beiträge werden jetzt von der KI kategorisiert. Fortfahren?`)) return;
+    let done=0;
+    for(const entry of uncategorized){
+      const cat = await autoCategorizPost(entry.title, entry.content);
+      if(cat){
+        await supabase.from("library").update({category:cat}).eq("id",entry.id);
+      }
+      done++;
+      setSaveStatus(`${done}/${uncategorized.length} kategorisiert…`);
+    }
+    setSaveStatus("");
+    await loadBible();
+    alert("✅ Fertig! Alle Beiträge wurden kategorisiert.");
+  };
+
   const savePost = async()=>{
     if(!newTitle.trim()&&!newContent.trim()&&newImages.length===0) return;
     setSavingPost(true);
@@ -1262,6 +1280,14 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         </div>
                       );
                     })}
+                    {/* Bulk categorize button */}
+                    {bibleEntries.filter(e=>!e.category).length>0&&(
+                      <button onClick={bulkCategorize}
+                        style={{width:"100%",marginTop:12,background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:"#D4AF37",padding:"10px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2}}>
+                        🤖 {bibleEntries.filter(e=>!e.category).length} BEITRÄGE AUTO-KATEGORISIEREN
+                      </button>
+                    )}
+                    {saveStatus&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.6)",textAlign:"center",marginTop:8}}>{saveStatus}</div>}
                   </div>
                 )}
                 {showAdminPanel&&(
