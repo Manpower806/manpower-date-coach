@@ -166,6 +166,9 @@ export default function App({ user, onLogout }) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [bibleCategory, setBibleCategory] = useState("alle");
+  const [newCategory, setNewCategory] = useState("");
+  const [showStats, setShowStats] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [dailyMotiv, setDailyMotiv] = useState(null);
 
@@ -525,7 +528,7 @@ export default function App({ user, onLogout }) {
         created_by: user.username,
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
-      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false);
+      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false); setNewCategory("");
       // Send push to all members
       sendPushToAll("📖 MANPOWER-BIBEL", "Neuer Beitrag: " + newTitle, "bible");
       await loadBible();
@@ -1170,16 +1173,70 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               <div style={{height:1,background:`linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)`,marginTop:10}}/>
             </div>
 
+            {/* Category Filter */}
+            {!selectedEntry&&!showNewPost&&(
+              <div style={{overflowX:"auto",display:"flex",gap:8,paddingBottom:8,marginBottom:12,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+                {["alle","Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"].map(cat=>(
+                  <button key={cat} onClick={()=>setBibleCategory(cat)}
+                    style={{flexShrink:0,background:bibleCategory===cat?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${bibleCategory===cat?"rgba(212,175,55,.6)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"6px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,color:bibleCategory===cat?"#D4AF37":"rgba(255,255,255,.5)",whiteSpace:"nowrap",transition:"all .2s"}}>
+                    {cat==="alle"?"🔥 ALLE":cat.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Admin: Neuer Beitrag Button */}
             {isAdmin&&!showNewPost&&!selectedEntry&&(
               <>
                 <MBtn onClick={()=>setShowNewPost(true)}>
                   ✍️  NEUEN BEITRAG ERSTELLEN
                 </MBtn>
-                <button onClick={()=>{ setShowAdminPanel(s=>!s); if(!showAdminPanel) loadAdminData(); }}
-                  style={{width:"100%",background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"rgba(201,103,125,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,marginBottom:14}}>
-                  👑 ADMIN-PANEL {showAdminPanel?"▲":"▼"}
-                </button>
+                <div style={{display:"flex",gap:8,marginBottom:14}}>
+                  <button onClick={()=>{ setShowAdminPanel(s=>!s); if(!showAdminPanel) loadAdminData(); }}
+                    style={{flex:1,background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"rgba(201,103,125,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3}}>
+                    👑 ADMIN {showAdminPanel?"▲":"▼"}
+                  </button>
+                  <button onClick={()=>setShowStats(s=>!s)}
+                    style={{flex:1,background:"rgba(92,184,122,.08)",border:"1px solid rgba(92,184,122,.25)",color:"rgba(92,184,122,.7)",padding:"10px",cursor:"pointer",borderRadius:10,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3}}>
+                    📊 STATS {showStats?"▲":"▼"}
+                  </button>
+                </div>
+                {showStats&&(
+                  <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(92,184,122,.2)",background:"rgba(3,2,1,.85)"}}>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"rgba(92,184,122,.8)",letterSpacing:2,marginBottom:14}}>📊 STATISTIKEN</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                      {[
+                        ["📖","Beiträge",bibleEntries.length],
+                        ["🔥","Reaktionen",Object.values(entryReactions).reduce((a,b)=>a+Object.values(b).reduce((c,d)=>c+(Array.isArray(d)?d.length:0),0),0)],
+                        ["💬","Kommentare",Object.values(entryComments).reduce((a,b)=>a+(Array.isArray(b)?b.length:0),0)],
+                        ["✓","Leser",Object.keys(readEntries).length],
+                      ].map(([icon,label,val])=>(
+                        <div key={label} style={{background:"rgba(92,184,122,.06)",border:"1px solid rgba(92,184,122,.15)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                          <div style={{fontSize:20,marginBottom:4}}>{icon}</div>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:"rgba(92,184,122,.9)"}}>{val}</div>
+                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(92,184,122,.5)"}}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"rgba(92,184,122,.5)",marginBottom:8}}>TOP BEITRÄGE</div>
+                    {[...bibleEntries].sort((a,b)=>{
+                      const ra=Object.values(entryReactions[a.id]||{}).reduce((x,y)=>x+(Array.isArray(y)?y.length:0),0);
+                      const rb=Object.values(entryReactions[b.id]||{}).reduce((x,y)=>x+(Array.isArray(y)?y.length:0),0);
+                      return rb-ra;
+                    }).slice(0,5).map((e,i)=>{
+                      const r=Object.values(entryReactions[e.id]||{}).reduce((x,y)=>x+(Array.isArray(y)?y.length:0),0);
+                      const c=Array.isArray(entryComments[e.id])?entryComments[e.id].length:0;
+                      return (
+                        <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(92,184,122,.08)"}}>
+                          <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"rgba(92,184,122,.4)",width:16}}>{i+1}</span>
+                          <div style={{flex:1,fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.title}</div>
+                          <span style={{fontSize:11}}>🔥{r}</span>
+                          <span style={{fontSize:11}}>💬{c}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {showAdminPanel&&(
                   <div style={{...gc,padding:"14px",marginBottom:16,borderColor:"rgba(201,103,125,.2)",background:"rgba(3,2,1,.85)"}}>
                     <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"rgba(201,103,125,.8)",letterSpacing:2,marginBottom:14}}>👑 ADMIN-PANEL</div>
@@ -1255,6 +1312,12 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <SL>TITEL</SL>
                 <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Titel (optional)..."
                   style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
+                <SL>KATEGORIE</SL>
+                <select value={newCategory} onChange={e=>setNewCategory(e.target.value)}
+                  style={{...gc,width:"100%",padding:"9px 11px",color:newCategory?G.text:"rgba(212,175,55,.35)",fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)",cursor:"pointer"}}>
+                  <option value="">-- Kategorie wählen --</option>
+                  {["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"].map(c=><option key={c} value={c} style={{background:"#0a0600"}}>{c}</option>)}
+                </select>
                 <SL>BILD HINZUFÜGEN (optional)</SL>
                 <div className="dz" onClick={()=>bibleImageRef.current?.click()}
                   style={{...gc,padding:"12px",textAlign:"center",marginBottom:8,borderStyle:"dashed",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.6)",cursor:"pointer"}}>
@@ -1610,7 +1673,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   </div>
                 ):(
                   <BibleFeed
-                    entries={bibleEntries}
+                    entries={bibleEntries.filter(e=>bibleCategory==="alle"||(e.category||"")===bibleCategory)}
                     entryReactions={entryReactions}
                     entryComments={entryComments}
                     readEntries={readEntries}
@@ -1849,6 +1912,13 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
               {totalReactions>0&&(
                 <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:5}}>
                   {totalReactions} {totalReactions===1?"Reaktion":"Reaktionen"}
+                </div>
+              )}
+
+              {/* Category tag */}
+              {entry.category&&(
+                <div style={{display:"inline-block",background:"rgba(212,175,55,.12)",border:"1px solid rgba(212,175,55,.25)",borderRadius:12,padding:"2px 10px",marginBottom:6,fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:"rgba(212,175,55,.7)"}}>
+                  {entry.category.toUpperCase()}
                 </div>
               )}
 
