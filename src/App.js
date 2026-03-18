@@ -498,6 +498,30 @@ export default function App({ user, onLogout }) {
     setNewImages(prev=>[...prev,...conv].slice(0,20));
   };
 
+  const autoCategorizPost = async(title, content)=>{
+    if(!title && !content) return "";
+    try {
+      const res = await fetch("/api/claude", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:50,
+          messages:[{role:"user",content:`Analysiere diesen Beitragstitel und -inhalt und ordne ihn GENAU EINER dieser Kategorien zu: Mindset, Dating, Frauen, Finanzen, Fitness, Lifestyle.
+
+Titel: "${title}"
+Inhalt: "${(content||"").slice(0,200)}"
+
+Antworte NUR mit dem Kategorienamen, ohne Erklärung.`}]
+        })
+      });
+      const data = await res.json();
+      const cat = data.content?.[0]?.text?.trim()||"";
+      const valid = ["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"];
+      return valid.find(v=>cat.toLowerCase().includes(v.toLowerCase()))||"";
+    } catch(e){ return ""; }
+  };
+
   const savePost = async()=>{
     if(!newTitle.trim()&&!newContent.trim()&&newImages.length===0) return;
     setSavingPost(true);
@@ -515,6 +539,8 @@ export default function App({ user, onLogout }) {
         setSaveStatus("HINTERGRUNDBILD…");
         bgUrl = await uploadDataUrlToStorage(supabase, newBgImage.dataUrl, "backgrounds");
       }
+      setSaveStatus("KATEGORIE WIRD ERMITTELT…");
+      const finalCategory = newCategory || await autoCategorizPost(newTitle.trim(), newContent.trim());
       setSaveStatus("SPEICHERE…");
       const {error} = await supabase.from("library").insert({
         title: newTitle.trim(),
@@ -526,6 +552,7 @@ export default function App({ user, onLogout }) {
         music_start: newMusicStart || 0,
         music_end: newMusicEnd || 0,
         created_by: user.username,
+        category: finalCategory,
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
       setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false); setNewCategory("");
@@ -1312,10 +1339,10 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <SL>TITEL</SL>
                 <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Titel (optional)..."
                   style={{...gc,width:"100%",padding:"9px 11px",color:G.text,fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)"}}/>
-                <SL>KATEGORIE</SL>
+                <SL>KATEGORIE <span style={{fontSize:9,color:"rgba(212,175,55,.4)",letterSpacing:0,textTransform:"none",fontFamily:"'Lato',sans-serif"}}>· KI erkennt automatisch wenn leer</span></SL>
                 <select value={newCategory} onChange={e=>setNewCategory(e.target.value)}
                   style={{...gc,width:"100%",padding:"9px 11px",color:newCategory?G.text:"rgba(212,175,55,.35)",fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)",cursor:"pointer"}}>
-                  <option value="">-- Kategorie wählen --</option>
+                  <option value="">🤖 KI bestimmt automatisch</option>
                   {["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"].map(c=><option key={c} value={c} style={{background:"#0a0600"}}>{c}</option>)}
                 </select>
                 <SL>BILD HINZUFÜGEN (optional)</SL>
