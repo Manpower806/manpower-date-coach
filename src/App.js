@@ -1292,7 +1292,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                       Bevor die KI analysiert – schreib deine geplante Antwort. Die KI bewertet sie direkt und erklärt was stark oder schwach daran ist.
                     </div>
                     <textarea value={userResponse} onChange={e=>setUserResponse(e.target.value)}
-                      placeholder={"z.B. "Hey, wann bist du wieder in der Stadt?""}
+                      placeholder={'z.B. "Hey, wann bist du wieder in der Stadt?"'}
                       rows={3} autoFocus
                       style={{width:"100%",background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.25)",borderRadius:6,padding:"10px 12px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14,resize:"none",marginBottom:12}}/>
                     <div style={{display:"flex",gap:8}}>
