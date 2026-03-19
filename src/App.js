@@ -135,6 +135,9 @@ export default function App({ user, onLogout }) {
 
   // analyse
   const [chatImg, setChatImg] = useState(null);
+  const [userResponse, setUserResponse] = useState("");
+  const [showUserStep, setShowUserStep] = useState(false);
+  const [showUserResponse, setShowUserResponse] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [chatResult, setChatResult] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
@@ -927,7 +930,7 @@ Nur valides JSON: {"detectedLanguage":"...","profileAnalysis":"...","openers":[{
     reader.onload=e=>{
       const du=e.target.result;
       setChatImg({base64:du.split(",")[1],dataUrl:du,mediaType:du.split(";")[0].split(":")[1]});
-      setChatResult(null);setChatErr(null);setFeedback(null);setCurrentId(null);
+      setChatResult(null);setChatErr(null);setFeedback(null);setCurrentId(null);setShowUserStep(false);setUserResponse("");
     };
     reader.readAsDataURL(file);
   };
@@ -935,13 +938,16 @@ Nur valides JSON: {"detectedLanguage":"...","profileAnalysis":"...","openers":[{
 
   const analyzeChat=async()=>{
     if(!chatImg||!apiKey.trim()) return;
-    setAnalyzing(true);setChatResult(null);setChatErr(null);setFeedback(null);setCurrentId(null);
+    setAnalyzing(true);setChatResult(null);setChatErr(null);setFeedback(null);setCurrentId(null);setShowUserStep(false);setUserResponse("");
     const commCtx=await buildCommCtx();
     try{
       const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,
         system:`Du bist der Chat-Coach der Manpower Bruderschaft. Farbige Blase=Nutzer, graue=sie. Analyse auf Deutsch, Antworten in Chat-Sprache. ${commCtx}
 Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEWOGEN|SCHWACH","kurzanalyse":"...","staerken":["..."],"verbesserungen":["..."],"psychoInsight":"...","naechsterSchritt":"...","replies":[{"label":"Selbstsicher","text":"...","warum":"..."},{"label":"Charmant","text":"...","warum":"..."},{"label":"Witzig","text":"...","warum":"..."}],"prinzip":"...","situation":"..."}`,
-        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:chatImg.mediaType,data:chatImg.base64}},{type:"text",text:`Analysiere. Ton: ${TONE_DE[tone]}. Nur JSON.`}]}]})});
+        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:chatImg.mediaType,data:chatImg.base64}},{type:"text",text:`Analysiere. Ton: ${TONE_DE[tone]}.${userResponse?`
+
+Der Nutzer hätte selbst folgendes geschrieben: "${userResponse}"
+Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte er besser machen können? Füge diese Bewertung in "verbesserungen" ein.`:""} Nur JSON.`}]}]})});
       if(!res) throw new Error("Netzwerkfehler – bitte nochmal versuchen.");
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
@@ -952,7 +958,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
       if(row) setCurrentId(row.id);
       const nl={...localMem,totalAnalyses:(localMem.totalAnalyses||0)+1};
       setLocalMem(nl);saveLocal(nl);
-      saveChatEntry("analyse","[Chat Screenshot]",parsed,tone);
+      saveChatEntry("analyse","[Chat Screenshot]",parsed,tone); setUserResponse("");
     }catch(err){setChatErr("Fehler: "+(err.message||"Versuch es nochmal."));}
     setAnalyzing(false);
   };
@@ -1269,9 +1275,44 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   )}
                 </div>
                 <input ref={chatRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleChatFile(e.target.files[0])}/>
-                <MBtn onClick={analyzeChat} disabled={!chatImg||analyzing}>
-                  {analyzing?"✨  ANALYSIERE…":"⚔  TIEFENANALYSE STARTEN"}
-                </MBtn>
+                {/* User response input */}
+                {chatImg&&!showUserStep&&!chatResult&&(
+                  <MBtn onClick={()=>setShowUserStep(true)} disabled={analyzing}>
+                    ⚔  TIEFENANALYSE STARTEN
+                  </MBtn>
+                )}
+
+                {chatImg&&showUserStep&&!chatResult&&(
+                  <div style={{...gc,padding:"16px",marginBottom:10,background:"rgba(3,2,1,.8)",borderColor:"rgba(212,175,55,.3)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <span style={{fontSize:22}}>💭</span>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#D4AF37",letterSpacing:2}}>WAS HÄTTEST DU GESCHRIEBEN?</div>
+                    </div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",marginBottom:12,lineHeight:1.6}}>
+                      Bevor die KI analysiert – schreib deine geplante Antwort. Die KI bewertet sie direkt und erklärt was stark oder schwach daran ist.
+                    </div>
+                    <textarea value={userResponse} onChange={e=>setUserResponse(e.target.value)}
+                      placeholder={"z.B. "Hey, wann bist du wieder in der Stadt?""}
+                      rows={3} autoFocus
+                      style={{width:"100%",background:"rgba(0,0,0,.4)",border:"1px solid rgba(212,175,55,.25)",borderRadius:6,padding:"10px 12px",color:"#F5F0E8",fontFamily:"'Lato',sans-serif",fontSize:14,resize:"none",marginBottom:12}}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>{setShowUserStep(false);setUserResponse("");}}
+                        style={{flex:1,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:8,padding:"10px",color:"rgba(245,237,232,.4)",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,cursor:"pointer"}}>
+                        ÜBERSPRINGEN
+                      </button>
+                      <button onClick={analyzeChat} disabled={analyzing}
+                        style={{flex:2,background:"linear-gradient(135deg,#3d2800,#D4AF37,#F5E27A,#D4AF37,#3d2800)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:8,padding:"10px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:9,letterSpacing:3,cursor:analyzing?"not-allowed":"pointer"}}>
+                        {analyzing?"ANALYSIERE…":"👑  JETZT ANALYSIEREN"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {chatResult&&(
+                  <MBtn onClick={analyzeChat} disabled={analyzing}>
+                    {analyzing?"✨  ANALYSIERE…":"🔄  NEU ANALYSIEREN"}
+                  </MBtn>
+                )}
                 {analyzing&&<Spin text="KI ANALYSIERT…"/>}
                 {chatErr&&<Err>{chatErr}</Err>}
                 {chatResult&&(
@@ -1370,6 +1411,15 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             )}
 
             {/* ── HISTORY ── */}
+            {/* App ≠ Real Life Disclaimer */}
+            <div style={{...gc,padding:"10px 14px",marginBottom:12,borderColor:"rgba(212,175,55,.1)",background:"rgba(3,2,1,.5)",display:"flex",gap:10,alignItems:"flex-start"}}>
+              <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.4)",lineHeight:1.6}}>
+                <strong style={{color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1}}>APP ≠ REAL LIFE</strong><br/>
+                Dieses Tool ist eine KI-gestützte Hilfestellung. Textnachrichten sind nur ein kleiner Teil der Anziehung – Körpersprache, Stimme und Präsenz im echten Leben sind weitaus wichtiger. Nutze den Coach als Lernwerkzeug, nicht als Ersatz für echte soziale Kompetenz.
+              </div>
+            </div>
+
             {tab==="history"&&(
               <div style={{animation:"fadeUp .3s ease"}}>
                 <SecTitle icon="📊" title="MEIN VERLAUF" sub="Deine gespeicherten Analysen & Opener"/>
@@ -1423,6 +1473,14 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             )}
 
             {/* ── TIPS ── */}
+            {/* App vs Real Life Disclaimer */}
+            <div style={{...gc,padding:"10px 14px",marginTop:8,marginBottom:4,borderColor:"rgba(212,175,55,.1)",background:"rgba(3,2,1,.5)",display:"flex",gap:10,alignItems:"flex-start"}}>
+              <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.35)",lineHeight:1.6}}>
+                <strong style={{color:"rgba(212,175,55,.4)",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:1}}>TOOL HINWEIS:</strong> Diese App ist ein Dating Tool, speziell für die Männer der Manpower Bruderschaft. Textnachrichten sind kein Ersatz für echte Verbindung – im Real Life zählen Präsenz, Körpersprache und Energie weit mehr als perfekte Texte.
+              </div>
+            </div>
+
             {tab==="tips"&&(
               <div style={{animation:"fadeUp .3s ease"}}>
                 <SecTitle icon="💡" title="PRINZIPIEN" sub="Was wirklich funktioniert"/>
@@ -1478,11 +1536,11 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                     </button>
                   ))}
                 </div>
-                {/* Scroll arrows for desktop */}
+                {/* Scroll arrows for desktop only */}
                 <button onClick={()=>{const el=document.getElementById("cat-scroll");if(el)el.scrollBy({left:-150,behavior:"smooth"});}}
-                  style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to right,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:"flex",alignItems:"center"}}>‹</button>
+                  style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to right,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:window.innerWidth>768?"flex":"none",alignItems:"center"}}>‹</button>
                 <button onClick={()=>{const el=document.getElementById("cat-scroll");if(el)el.scrollBy({left:150,behavior:"smooth"});}}
-                  style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to left,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:"flex",alignItems:"center"}}>›</button>
+                  style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to left,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:window.innerWidth>768?"flex":"none",alignItems:"center"}}>›</button>
               </div>
             )}
 
