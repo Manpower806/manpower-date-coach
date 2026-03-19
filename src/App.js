@@ -2265,9 +2265,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                 Für Fragen, Datenlöschung oder Support:<br/>
                 <a href="mailto:manpower-bruderschaft@proton.me" style={{color:"#D4AF37",textDecoration:"none"}}>manpower-bruderschaft@proton.me</a>
               </div>
-              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.35)",marginTop:10}}>
-                Diese App befindet sich in der Entwicklung. Bei kommerzieller Nutzung wird ein vollständiges Impressum nach §5 TMG ergänzt.
-              </div>
+
             </div>
           </div>
         </div>
