@@ -1338,7 +1338,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             </div>
 
             {/* Stories Row */}
-            {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(
+            {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(()=>{ try { return (
               <div style={{overflowX:"auto",display:"flex",gap:12,paddingBottom:8,marginBottom:16,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
                 {bibleEntries.slice(0,10).map((entry,i)=>{
                   let imgs=[];
@@ -1366,7 +1366,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   );
                 })}
               </div>
-            )}
+            ); } catch(e){ return null; } })()}
 
             {/* Category Filter */}
             {!selectedEntry&&!showNewPost&&(
@@ -1971,7 +1971,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
       </div>
 
       {/* ── STORY VIEWER ── */}
-      {storyOpen&&(()=>{
+      {storyOpen&&(()=>{ try {
         let imgs=[];
         try{imgs=JSON.parse(storyOpen.image_url);}catch{if(storyOpen.image_url)imgs=[storyOpen.image_url];}
         if(!Array.isArray(imgs))imgs=[];
@@ -2024,6 +2024,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             </div>
           </div>
         );
+      } catch(e){ return null; }
       })()}
 
       {/* ── PROFIL MODAL ── */}
