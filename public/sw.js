@@ -1,8 +1,11 @@
-// Manpower Service Worker v3 - Push + iOS compatible
+// Manpower Service Worker v4 - Offline + Push + iOS compatible
+const CACHE_NAME = 'manpower-v4';
 
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
   const method = event.request.method;
+
+  // Never intercept API calls
   if (
     url.includes('anthropic.com') ||
     url.includes('supabase.co') ||
@@ -14,8 +17,34 @@ self.addEventListener('fetch', (event) => {
   ) {
     return;
   }
+
+  // Images from storage - cache them for offline
+  if (url.includes('storage') || url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache =>
+        cache.match(event.request).then(cached => {
+          if (cached) return cached;
+          return fetch(event.request).then(response => {
+            if (response.ok) cache.put(event.request, response.clone());
+            return response;
+          }).catch(() => cached || new Response('', {status: 404}));
+        })
+      )
+    );
+    return;
+  }
+
+  // App shell - network first, fallback to cache
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request)
+      .then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request).then(r => r || new Response('Offline - Bitte Internet verbinden', {status: 503})))
   );
 });
 
