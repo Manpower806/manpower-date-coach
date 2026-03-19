@@ -172,6 +172,7 @@ export default function App({ user, onLogout }) {
   const [bibleCategory, setBibleCategory] = useState("alle");
   const [storyOpen, setStoryOpen] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
   const [showLegal, setShowLegal] = useState(false); // entry being shown as story
   const [storyIdx, setStoryIdx] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
