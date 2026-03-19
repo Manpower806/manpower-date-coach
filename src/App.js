@@ -176,7 +176,23 @@ export default function App({ user, onLogout }) {
   const [storyOpen, setStoryOpen] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
-  const [showLegal, setShowLegal] = useState(false); // entry being shown as story
+  const [showLegal, setShowLegal] = useState(false);
+  useEffect(()=>{
+    if(showLegal){
+      document.body.style.overflow='hidden';
+      document.body.style.position='fixed';
+      document.body.style.width='100%';
+    } else {
+      document.body.style.overflow='';
+      document.body.style.position='';
+      document.body.style.width='';
+    }
+    return ()=>{
+      document.body.style.overflow='';
+      document.body.style.position='';
+      document.body.style.width='';
+    };
+  },[showLegal]);
   const [storyIdx, setStoryIdx] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
   const [newCategory, setNewCategory] = useState("");
@@ -2217,7 +2233,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
       {/* ── DATENSCHUTZ & INFO MODAL ── */}
       {showLegal&&(
-        <div style={{position:"fixed",inset:0,zIndex:9998,background:"rgba(0,0,0,.95)",overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setShowLegal(false);}}>
+        <div style={{position:"fixed",inset:0,zIndex:9998,background:"rgba(0,0,0,.95)",overflowY:"auto",overscrollBehavior:"contain",WebkitOverflowScrolling:"touch",touchAction:"pan-y"}} onClick={e=>{if(e.target===e.currentTarget)setShowLegal(false);}}>
           <div style={{maxWidth:480,margin:"0 auto",padding:"24px 20px 40px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37",letterSpacing:2}}>ℹ️ INFO & DATENSCHUTZ</div>
