@@ -171,7 +171,8 @@ export default function App({ user, onLogout }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
   const [storyOpen, setStoryOpen] = useState(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine); // entry being shown as story
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showLegal, setShowLegal] = useState(false); // entry being shown as story
   const [storyIdx, setStoryIdx] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
   const [newCategory, setNewCategory] = useState("");
@@ -2036,8 +2037,14 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           </div>
         )}
 
-        <div style={{textAlign:"center",marginTop:24,fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:4,color:"rgba(212,175,55,.12)"}}>
-          MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
+        <div style={{textAlign:"center",marginTop:24,marginBottom:8}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:4,color:"rgba(212,175,55,.12)",marginBottom:8}}>
+            MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
+          </div>
+          <button onClick={()=>setShowLegal(true)}
+            style={{background:"none",border:"none",color:"rgba(212,175,55,.2)",fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:2,cursor:"pointer",textDecoration:"underline"}}>
+            DATENSCHUTZ & INFO
+          </button>
         </div>
       </div>
 
@@ -2097,6 +2104,58 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
         );
       } catch(e){ return null; }
       })()}
+
+      {/* ── DATENSCHUTZ & INFO MODAL ── */}
+      {showLegal&&(
+        <div style={{position:"fixed",inset:0,zIndex:9998,background:"rgba(0,0,0,.95)",overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setShowLegal(false);}}>
+          <div style={{maxWidth:480,margin:"0 auto",padding:"24px 20px 40px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:"#D4AF37",letterSpacing:2}}>ℹ️ INFO & DATENSCHUTZ</div>
+              <button onClick={()=>setShowLegal(false)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:"#D4AF37",padding:"5px 14px",cursor:"pointer",borderRadius:16,fontFamily:"'Cinzel',serif",fontSize:8}}>✕</button>
+            </div>
+
+            {/* About */}
+            <div style={{...gc,padding:"16px",marginBottom:16,borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.8)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#D4AF37",letterSpacing:2,marginBottom:10}}>🔒 GESCHLOSSENE COMMUNITY</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)",lineHeight:1.8}}>
+                Die Manpower Bruderschaft App ist eine private, geschlossene Community-Plattform. Der Zugang erfolgt ausschließlich über persönliche Einladung. Diese App ist nicht öffentlich zugänglich und richtet sich ausschließlich an eingeladene Mitglieder.
+              </div>
+            </div>
+
+            {/* Data protection */}
+            <div style={{...gc,padding:"16px",marginBottom:16,borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.8)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#D4AF37",letterSpacing:2,marginBottom:10}}>📊 WELCHE DATEN WERDEN GESPEICHERT</div>
+              {[
+                ["👤","Account-Daten","Benutzername, Passwort (verschlüsselt), Gerätebindung"],
+                ["💬","Coach-Daten","Deine Chat-Analysen und Opener werden für deinen persönlichen Verlauf gespeichert. Nur du siehst deine eigenen Daten."],
+                ["📖","Bibel-Daten","Welche Beiträge du gelesen hast, deine Reaktionen und Kommentare"],
+                ["🔔","Push-Daten","Wenn aktiviert: Deine Push-Subscription für Benachrichtigungen"],
+                ["👤","Profil-Daten","Anzeigename, Stadt und Bio – freiwillig und nur von dir einsehbar"],
+              ].map(([icon,title,desc])=>(
+                <div key={title} style={{marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(212,175,55,.08)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <span style={{fontSize:16}}>{icon}</span>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,color:"rgba(212,175,55,.7)"}}>{title}</div>
+                  </div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.55)",lineHeight:1.6,paddingLeft:24}}>{desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Contact */}
+            <div style={{...gc,padding:"16px",borderColor:"rgba(212,175,55,.2)",background:"rgba(3,2,1,.8)"}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#D4AF37",letterSpacing:2,marginBottom:10}}>📧 KONTAKT</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)"}}>
+                Für Fragen, Datenlöschung oder Support:<br/>
+                <a href="mailto:manpower-bruderschaft@proton.me" style={{color:"#D4AF37",textDecoration:"none"}}>manpower-bruderschaft@proton.me</a>
+              </div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.35)",marginTop:10}}>
+                Diese App befindet sich in der Entwicklung. Bei kommerzieller Nutzung wird ein vollständiges Impressum nach §5 TMG ergänzt.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── PROFIL MODAL ── */}
       {showProfile&&(
