@@ -170,7 +170,8 @@ export default function App({ user, onLogout }) {
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
-  const [storyOpen, setStoryOpen] = useState(null); // entry being shown as story
+  const [storyOpen, setStoryOpen] = useState(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine); // entry being shown as story
   const [storyIdx, setStoryIdx] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
   const [newCategory, setNewCategory] = useState("");
@@ -323,6 +324,11 @@ export default function App({ user, onLogout }) {
     }
     // Check push status
     if(localStorage.getItem("mp_push_enabled")) setPushEnabled(true);
+    // Offline detection
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => { setIsOffline(false); loadBible(); };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
     // Load profile
     loadProfile();
     // Daily motivation - show once per day
@@ -398,7 +404,17 @@ export default function App({ user, onLogout }) {
     setLoadingBible(true);
     // Load entries first - show immediately
     const{data}=await supabase.from("library").select("*").order("created_at",{ascending:false});
-    if(data) setBibleEntries(data);
+    if(data){
+      setBibleEntries(data);
+      // Cache for offline use
+      try{ localStorage.setItem("mp_bible_cache", JSON.stringify(data)); }catch{}
+    } else {
+      // Try offline cache
+      try{
+        const cached = localStorage.getItem("mp_bible_cache");
+        if(cached) setBibleEntries(JSON.parse(cached));
+      }catch{}
+    }
     setLoadingBible(false);
     // Load social data in background (non-blocking)
     try{
@@ -990,6 +1006,17 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>
+
+        {/* OFFLINE BANNER */}
+        {isOffline&&(
+          <div style={{background:"rgba(224,92,106,.15)",border:"1px solid rgba(224,92,106,.3)",borderRadius:8,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,animation:"fadeUp .3s ease"}}>
+            <span style={{fontSize:16}}>📵</span>
+            <div>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"#ff8a95",marginBottom:2}}>OFFLINE MODUS</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(255,138,149,.7)"}}>Gecachte Bibel-Beiträge werden angezeigt</div>
+            </div>
+          </div>
+        )}
 
         {/* ONBOARDING */}
         {showOnboarding&&(
