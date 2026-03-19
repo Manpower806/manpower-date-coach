@@ -52,6 +52,18 @@ export default function Login({ onLogin }) {
   const t = LANGS[lang] || LANGS.de;
   const changeLang = (l) => { setLang(l); localStorage.setItem("mp_lang", l); setError(null); };
 
+  // Validate invite code on load
+  useState(()=>{
+    if(mode==="register" && inviteCode){
+      supabase.from("invite_links").select("used_by,expires_at").eq("code",inviteCode.toUpperCase().trim()).single()
+        .then(({data,error})=>{
+          if(error||!data){ setRegError("Ungültiger Einladungslink."); return; }
+          if(data.used_by){ setRegError("Dieser Einladungslink wurde bereits verwendet und ist nicht mehr gültig."); return; }
+          if(new Date(data.expires_at)<new Date()){ setRegError("Dieser Einladungslink ist abgelaufen."); return; }
+        });
+    }
+  });
+
   const handleRegister = async(e) => {
     e.preventDefault();
     if(!regUser.trim()||!regPass.trim()) { setRegError("Bitte alle Felder ausfüllen."); return; }
