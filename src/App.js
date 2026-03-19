@@ -667,8 +667,9 @@ Antworte mit NUR einem Wort.`}]
       const audio = new Audio(entry.music_url.startsWith("http") ? entry.music_url : "/"+entry.music_url);
       const start = entry.music_start||0;
       const end = entry.music_end||0;
-      audio.currentTime = start;
+      audio.preload = "auto";
       audio.volume = 0.7;
+      audio.currentTime = start;
       if(end>0){
         // Loop between start and end - use setInterval for reliable looping
         audio.ontimeupdate = ()=>{
@@ -1635,19 +1636,21 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                             background:"linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.52) 28%,rgba(0,0,0,.2) 52%,rgba(0,0,0,.04) 72%,transparent 100%)"
                           }}/>
                         ):null; })()}
-                        {/* Text image layer */}
-                        {(()=>{
+                        {/* Text image layer - render all, show current instantly */}
+                        {imgs.map((imgSrc,imgIdx)=>{
                           let blendActive=false;
-                          try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");blendActive=!!bm[carouselIdx];}catch{}
-                          return <img src={imgs[carouselIdx]} alt="" style={{
+                          try{const bm=JSON.parse(selectedEntry?.blend_modes||"[]");blendActive=!!bm[imgIdx];}catch{}
+                          return <img key={imgIdx} src={imgSrc} alt="" style={{
                             position:"absolute",inset:0,width:"100%",height:"100%",
                             objectFit:"cover",objectPosition:"center",display:"block",zIndex:4,
                             mixBlendMode:blendActive?"screen":"normal",
                             filter:blendActive
                               ?"brightness(1.6) contrast(1.5) drop-shadow(0px 0px 2px #000) drop-shadow(0px 0px 5px #000) drop-shadow(0px 0px 10px #000) drop-shadow(3px 3px 0px #000) drop-shadow(-3px -3px 0px #000) drop-shadow(3px -3px 0px #000) drop-shadow(-3px 3px 0px #000)"
-                              :"none"
+                              :"none",
+                            opacity: imgIdx===carouselIdx?1:0,
+                            transition:"opacity 0.15s ease"
                           }}/>;
-                        })()}
+                        })}
                         {/* Left arrow */}
                         {imgs.length>1&&carouselIdx>0&&(
                           <button onClick={e=>{e.stopPropagation();setCarouselIdx(i=>i-1);}}
