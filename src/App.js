@@ -2653,7 +2653,7 @@ const BibleFeed = memo(function BibleFeed({entries, entryReactions, entryComment
   } catch(err) {
     return <div style={{color:"#ff8a95",fontFamily:"'Lato',sans-serif",fontSize:12,padding:16,textAlign:"center"}}>Fehler: {err&&err.message}</div>;
   }
-}
+});
 
 
 function SL({children}){return <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.75)",marginBottom:8,textTransform:"uppercase",fontWeight:600}}>{children}</div>;}
