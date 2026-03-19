@@ -1901,9 +1901,10 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   {/* Video player */}
                   {selectedEntry.video_url&&(
                     <div style={{marginBottom:16,borderRadius:8,overflow:"hidden",background:"#000"}}>
-                      <video src={selectedEntry.video_url} controls playsInline
+                      <video src={selectedEntry.video_url} controls playsInline controlsList="nodownload"
                         style={{width:"100%",maxHeight:300,display:"block"}}
                         poster=""
+                        onContextMenu={e=>e.preventDefault()}
                       />
                     </div>
                   )}
@@ -2467,10 +2468,15 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
 
             {/* Video or Image */}
             {entry.video_url&&!imgs[0]&&(
-              <div style={{position:"relative",width:"100%",background:"#111",overflow:"hidden",cursor:"pointer",minHeight:180,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>onOpen(entry)}>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:52,marginBottom:6}}>▶️</div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(212,175,55,.6)",letterSpacing:2}}>VIDEO ANSEHEN</div>
+              <div style={{position:"relative",width:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
+                <video src={entry.video_url+"#t=1"}
+                  style={{width:"100%",maxHeight:"90vw",display:"block",objectFit:"cover",pointerEvents:"none"}}
+                  preload="metadata" muted playsInline
+                />
+                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.3)"}}>
+                  <div style={{width:58,height:58,borderRadius:"50%",background:"rgba(0,0,0,.55)",border:"2px solid rgba(212,175,55,.7)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <span style={{fontSize:24,color:"#D4AF37",marginLeft:4}}>▶</span>
+                  </div>
                 </div>
               </div>
             )}
