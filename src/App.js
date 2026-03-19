@@ -115,59 +115,25 @@ const gc = {
 };
 
 function VideoThumb({ src }) {
-  const canvasRef = useRef(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (!src) return;
-    const video = document.createElement("video");
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "metadata";
-
-    const tryCapture = (time) => {
-      video.currentTime = time;
-    };
-
-    video.addEventListener("loadedmetadata", () => {
-      // Try at 10% of duration or 1s, whichever is less
-      const seekTo = Math.min(video.duration * 0.1, 2);
-      tryCapture(seekTo > 0 ? seekTo : 0.5);
-    });
-
-    video.addEventListener("seeked", () => {
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 360;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        video.src = "";
-      } catch (e) {
-        setFailed(true);
-      }
-    });
-
-    video.addEventListener("error", () => setFailed(true));
-    video.src = src;
-
-    return () => { video.src = ""; };
-  }, [src]);
-
-  if (failed) {
-    return (
-      <div style={{width:"100%",height:220,background:"linear-gradient(135deg,#1a0d00,#2a1500)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <span style={{fontSize:48}}>🎬</span>
-      </div>
-    );
-  }
-
+  const [loaded, setLoaded] = useState(false);
+  const thumbSrc = src ? src + "#t=2" : "";
   return (
-    <canvas ref={canvasRef}
-      style={{width:"100%",maxHeight:"90vw",display:"block",objectFit:"cover"}}
-    />
+    <div style={{position:"relative",width:"100%",minHeight:200,background:"linear-gradient(135deg,#1a0d00,#2a1500)"}}>
+      <video
+        src={thumbSrc}
+        style={{width:"100%",maxHeight:"90vw",display:loaded?"block":"none",objectFit:"cover"}}
+        preload="metadata"
+        muted
+        playsInline
+        onLoadedData={()=>setLoaded(true)}
+        onCanPlay={()=>setLoaded(true)}
+      />
+      {!loaded&&(
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <span style={{fontSize:48,opacity:.4}}>🎬</span>
+        </div>
+      )}
+    </div>
   );
 }
 
