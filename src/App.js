@@ -1338,35 +1338,9 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             </div>
 
             {/* Stories Row */}
-            {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(()=>{ try { return (
-              <div style={{overflowX:"auto",display:"flex",gap:12,paddingBottom:8,marginBottom:16,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-                {bibleEntries.slice(0,10).map((entry,i)=>{
-                  let imgs=[];
-                  try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
-                  const isRead=!!readEntries[entry.id];
-                  return (
-                    <div key={entry.id} onClick={()=>{setStoryOpen(entry);setStoryIdx(0);setStoryProgress(0);}} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
-                      {/* Ring */}
-                      <div style={{width:62,height:62,borderRadius:"50%",padding:2,background:isRead?"rgba(255,255,255,.15)":"linear-gradient(135deg,#D4AF37,#F5E27A,#8B6914,#D4AF37)"}}>
-                        <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#111",overflow:"hidden",border:"2px solid #000"}}>
-                          {imgs[0]?(
-                            <img src={imgs[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                          ):(
-                            <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,rgba(212,175,55,.3),rgba(139,105,20,.3))"}}>
-                              {entry.video_url?<span style={{fontSize:20}}>🎬</span>:<span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:"#D4AF37"}}>M</span>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Title */}
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:isRead?"rgba(255,255,255,.35)":"rgba(255,255,255,.8)",maxWidth:64,textAlign:"center",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.2}}>
-                        {entry.title||"Story"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ); } catch(e){ return null; } })()}
+            {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(
+              <StoriesRow entries={bibleEntries} readEntries={readEntries} onOpen={(entry)=>{setStoryOpen(entry);setStoryIdx(0);setStoryProgress(0);}}/>
+            )}
 
             {/* Category Filter */}
             {!selectedEntry&&!showNewPost&&(
@@ -2224,6 +2198,38 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
 // ── COMPONENTS ──────────────────────────────────────────────────────────────
 const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12};
+function StoriesRow({entries, readEntries, onOpen}) {
+  try {
+    return (
+      <div style={{overflowX:"auto",display:"flex",gap:12,paddingBottom:8,marginBottom:16,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+        {entries.slice(0,10).map(entry=>{
+          let imgs=[];
+          try{const p=JSON.parse(entry.image_url);imgs=Array.isArray(p)?p:(p?[p]:[]);}catch{imgs=entry.image_url?[entry.image_url]:[]}
+          const isRead=!!readEntries[entry.id];
+          return (
+            <div key={entry.id} onClick={()=>onOpen(entry)} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
+              <div style={{width:62,height:62,borderRadius:"50%",padding:2,background:isRead?"rgba(255,255,255,.15)":"linear-gradient(135deg,#D4AF37,#F5E27A,#8B6914,#D4AF37)"}}>
+                <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#111",overflow:"hidden",border:"2px solid #000"}}>
+                  {imgs[0]?(
+                    <img src={imgs[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  ):(
+                    <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,rgba(212,175,55,.3),rgba(139,105,20,.3))"}}>
+                      {entry.video_url?<span style={{fontSize:20}}>🎬</span>:<span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:"#D4AF37"}}>M</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:isRead?"rgba(255,255,255,.35)":"rgba(255,255,255,.85)",maxWidth:64,textAlign:"center",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.2}}>
+                {entry.title||"Story"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  } catch(e){ return null; }
+}
+
 function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen}) {
   if(!entries||!entries.length) return null;
   try { return (
