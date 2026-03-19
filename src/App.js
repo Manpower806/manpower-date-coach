@@ -1469,13 +1469,20 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
 
             {/* Category Filter */}
             {!selectedEntry&&!showNewPost&&(
-              <div style={{overflowX:"auto",display:"flex",gap:8,paddingBottom:8,marginBottom:12,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-                {["alle","Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle","Videos"].map(cat=>(
-                  <button key={cat} onClick={()=>setBibleCategory(cat)}
-                    style={{flexShrink:0,background:bibleCategory===cat?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${bibleCategory===cat?"rgba(212,175,55,.6)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"6px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,color:bibleCategory===cat?"#D4AF37":"rgba(255,255,255,.5)",whiteSpace:"nowrap",transition:"all .2s"}}>
-                    {cat==="alle"?"🔥 ALLE":cat.toUpperCase()}
-                  </button>
-                ))}
+              <div style={{position:"relative",marginBottom:12}}>
+                <div id="cat-scroll" style={{overflowX:"auto",display:"flex",gap:8,paddingBottom:8,WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
+                  {["alle","Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle","Videos"].map(cat=>(
+                    <button key={cat} onClick={()=>setBibleCategory(cat)}
+                      style={{flexShrink:0,background:bibleCategory===cat?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${bibleCategory===cat?"rgba(212,175,55,.6)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"6px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,color:bibleCategory===cat?"#D4AF37":"rgba(255,255,255,.5)",whiteSpace:"nowrap",transition:"all .2s"}}>
+                      {cat==="alle"?"🔥 ALLE":cat.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                {/* Scroll arrows for desktop */}
+                <button onClick={()=>{const el=document.getElementById("cat-scroll");if(el)el.scrollBy({left:-150,behavior:"smooth"});}}
+                  style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to right,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:"flex",alignItems:"center"}}>‹</button>
+                <button onClick={()=>{const el=document.getElementById("cat-scroll");if(el)el.scrollBy({left:150,behavior:"smooth"});}}
+                  style={{position:"absolute",right:0,top:"50%",transform:"translateY(-50%)",background:"linear-gradient(to left,rgba(3,2,1,.9),transparent)",border:"none",color:"rgba(212,175,55,.6)",cursor:"pointer",padding:"4px 8px",fontSize:14,zIndex:2,display:"flex",alignItems:"center"}}>›</button>
               </div>
             )}
 
