@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { supabase } from "./supabaseClient";
 
 const ADMIN_USERNAME = "mo";
@@ -121,10 +121,12 @@ function VideoThumb({ src }) {
     <div style={{position:"relative",width:"100%",minHeight:200,background:"linear-gradient(135deg,#1a0d00,#2a1500)"}}>
       <video
         src={thumbSrc}
-        style={{width:"100%",maxHeight:"90vw",display:loaded?"block":"none",objectFit:"cover"}}
+        style={{width:"100%",maxHeight:"90vw",display:"block",objectFit:"cover",opacity:loaded?1:0,transition:"opacity .3s"}}
         preload="metadata"
         muted
         playsInline
+        onLoadedMetadata={e=>{ e.target.currentTime=2; }}
+        onSeeked={e=>{ setLoaded(true); }}
         onLoadedData={()=>setLoaded(true)}
         onCanPlay={()=>setLoaded(true)}
       />
@@ -818,7 +820,7 @@ ONE WORD:`}]
     setSaveStatus("");
   };
 
-  const openEntry = (entry)=>{ 
+  const openEntry = useCallback((entry)=>{ 
     setSelectedEntry(entry); setCarouselIdx(0); setEditingEntry(null); setShowComments(false);
     markRead(entry.id);
     loadReactions(entry.id);
@@ -856,7 +858,8 @@ ONE WORD:`}]
       audio.play().catch(()=>{});
       audioRef.current = audio;
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const startEdit = (entry)=>{
     setEditingEntry(entry);
@@ -2167,7 +2170,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                   </div>
                 ):(
                   <BibleFeed
-                    entries={bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory)}
+                    entries={useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory])}
                     lang={lang}
                     entryReactions={entryReactions}
                     entryComments={entryComments}
@@ -2531,7 +2534,7 @@ function StoriesRow({entries, readEntries, onOpen}) {
   } catch(e){ return null; }
 }
 
-function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen, lang}) {
+const BibleFeed = memo(function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen, lang}) {
   if(!entries||!entries.length) return null;
   try { return (
     <div style={{display:"flex",flexDirection:"column",background:"transparent"}}>
