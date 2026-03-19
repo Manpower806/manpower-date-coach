@@ -168,6 +168,10 @@ export default function App({ user, onLogout }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
   const [newCategory, setNewCategory] = useState("");
+  const [newVideo, setNewVideo] = useState(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const videoRef = useRef(null);
   const [showStats, setShowStats] = useState(false);
   const [showInvites, setShowInvites] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -558,39 +562,70 @@ export default function App({ user, onLogout }) {
     await loadInvites();
   };
 
+  const handleVideoSelect = async(file)=>{
+    if(!file) return;
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if(file.size > maxSize){
+      alert(`❌ Video zu groß (${(file.size/1024/1024).toFixed(1)}MB)\nMaximal 50MB erlaubt.\n\nTipp: iPhone Einstellungen → Kamera → Formate → Hohe Effizienz aktivieren`);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setNewVideo({file, url, name: file.name, size: file.size});
+  };
+
+  const uploadVideo = async(file)=>{
+    setUploadingVideo(true);
+    setVideoProgress(0);
+    try{
+      const ext = file.name.split(".").pop()||"mp4";
+      const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const{data, error} = await supabase.storage.from("videos").upload(path, file, {
+        contentType: file.type||"video/mp4",
+        upsert: false,
+      });
+      if(error) throw new Error(error.message);
+      const{data:urlData} = supabase.storage.from("videos").getPublicUrl(path);
+      setUploadingVideo(false);
+      setVideoProgress(100);
+      return urlData.publicUrl;
+    } catch(e){
+      setUploadingVideo(false);
+      alert("Video-Upload fehlgeschlagen: " + e.message);
+      return null;
+    }
+  };
+
   const autoCategorizPost = async(title, textContent)=>{
-    if(!title && !textContent) return "Mindset"; // default fallback
+    if(!title && !textContent) return "Mindset";
+    // Simple keyword-based fallback that always works
+    const text = (title + " " + (textContent||"")).toLowerCase();
+    if(text.match(/frau|woman|women|girl|date|flirt|anmach|bezieh|sexy|attrak/)) return "Frauen";
+    if(text.match(/dating|opener|chat|nachricht|tinder|instagram|dm|match/)) return "Dating";
+    if(text.match(/geld|money|invest|finanz|reich|business|profit|income|crypto|aktie/)) return "Finanzen";
+    if(text.match(/fitness|gym|training|sport|muskel|workout|ernähr|abnehm|körper/)) return "Fitness";
+    if(text.match(/lifestyle|travel|reise|mode|fashion|luxus|auto|urlaub/)) return "Lifestyle";
+    if(text.match(/mindset|mental|erfolg|success|disziplin|focus|sigma|alpha|stoic|motivation|ziel/)) return "Mindset";
+    // Try AI as bonus
     try {
       const res = await fetch("/api/claude", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514",
-          max_tokens:10,
-          messages:[{role:"user",content:`Kategorisiere diesen Beitrag in GENAU EINE Kategorie.
-
-Kategorien: Mindset, Dating, Frauen, Finanzen, Fitness, Lifestyle
-
-Titel: "${title||""}"
-${textContent?`Inhalt: "${(textContent||"").slice(0,300)}"`:""} 
-
-Regeln:
-- Frauen/Beziehungen/Dynamik → "Frauen" oder "Dating"
-- Motivation/Erfolg/Mentalität → "Mindset"  
-- Geld/Business/Investitionen → "Finanzen"
-- Sport/Ernährung/Körper → "Fitness"
-- Reisen/Mode/Stil → "Lifestyle"
-
-Antworte mit NUR einem Wort.`}]
+          max_tokens:5,
+          messages:[{role:"user",content:`Reply with ONE word only - the best category for this post:
+Categories: Mindset, Dating, Frauen, Finanzen, Fitness, Lifestyle
+Title: "${(title||"").slice(0,100)}"
+ONE WORD:`}]
         })
       });
       const data = await res.json();
-      const cat = (data.content?.[0]?.text||"").trim().replace(/[^a-zA-ZäöüÄÖÜ]/g,"");
+      const cat = (data.content?.[0]?.text||"").trim().split(/\s/)[0].replace(/[^a-zA-ZäöüÄÖÜ]/g,"");
       const valid = ["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"];
-      return valid.find(v=>cat.toLowerCase()===v.toLowerCase()) || 
-             valid.find(v=>cat.toLowerCase().includes(v.toLowerCase())) || 
-             "Mindset";
-    } catch(e){ return "Mindset"; }
+      const match = valid.find(v=>cat.toLowerCase()===v.toLowerCase());
+      if(match) return match;
+    } catch(e){}
+    return "Mindset";
   };
 
   const bulkCategorize = async()=>{
@@ -631,6 +666,13 @@ Antworte mit NUR einem Wort.`}]
       }
       setSaveStatus("KATEGORIE WIRD ERMITTELT…");
       const finalCategory = newCategory || await autoCategorizPost(newTitle.trim(), newContent.trim());
+      // Upload video if selected
+      let videoUrl = null;
+      if(newVideo?.file){
+        setSaveStatus("VIDEO WIRD HOCHGELADEN…");
+        videoUrl = await uploadVideo(newVideo.file);
+        if(!videoUrl){ setSavingPost(false); setSaveStatus(""); return; }
+      }
       setSaveStatus("SPEICHERE…");
       const {error} = await supabase.from("library").insert({
         title: newTitle.trim(),
@@ -643,9 +685,10 @@ Antworte mit NUR einem Wort.`}]
         music_end: newMusicEnd || 0,
         created_by: user.username,
         category: finalCategory,
+        video_url: videoUrl,
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
-      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false); setNewCategory("");
+      setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false); setNewCategory(""); setNewVideo(null);
       // Send push to all members
       sendPushToAll("📖 MANPOWER-BIBEL", "Neuer Beitrag: " + newTitle, "bible");
       await loadBible();
@@ -1294,7 +1337,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             {/* Category Filter */}
             {!selectedEntry&&!showNewPost&&(
               <div style={{overflowX:"auto",display:"flex",gap:8,paddingBottom:8,marginBottom:12,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-                {["alle","Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"].map(cat=>(
+                {["alle","Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle","Videos"].map(cat=>(
                   <button key={cat} onClick={()=>setBibleCategory(cat)}
                     style={{flexShrink:0,background:bibleCategory===cat?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${bibleCategory===cat?"rgba(212,175,55,.6)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"6px 14px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1,color:bibleCategory===cat?"#D4AF37":"rgba(255,255,255,.5)",whiteSpace:"nowrap",transition:"all .2s"}}>
                     {cat==="alle"?"🔥 ALLE":cat.toUpperCase()}
@@ -1481,7 +1524,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 <select value={newCategory} onChange={e=>setNewCategory(e.target.value)}
                   style={{...gc,width:"100%",padding:"9px 11px",color:newCategory?G.text:"rgba(212,175,55,.35)",fontFamily:"'Lato',sans-serif",fontSize:13,marginBottom:10,background:"rgba(3,2,1,.65)",borderColor:"rgba(212,175,55,.2)",cursor:"pointer"}}>
                   <option value="">🤖 KI bestimmt automatisch</option>
-                  {["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle"].map(c=><option key={c} value={c} style={{background:"#0a0600"}}>{c}</option>)}
+                  {["Mindset","Dating","Frauen","Finanzen","Fitness","Lifestyle","Videos"].map(c=><option key={c} value={c} style={{background:"#0a0600"}}>{c}</option>)}
                 </select>
                 <SL>BILD HINZUFÜGEN (optional)</SL>
                 <div className="dz" onClick={()=>bibleImageRef.current?.click()}
@@ -1553,6 +1596,29 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         + BILD HINZUFÜGEN
                       </div>
                     )}
+                  </div>
+                )}
+                {/* VIDEO UPLOAD */}
+                <SL>🎥 VIDEO HINZUFÜGEN (optional, max 50MB)</SL>
+                {!newVideo?(
+                  <div className="dz" onClick={()=>{ const inp=document.createElement("input"); inp.type="file"; inp.accept="video/*"; inp.onchange=e=>handleVideoSelect(e.target.files[0]); inp.click(); }}
+                    style={{...gc,padding:"12px",textAlign:"center",marginBottom:10,borderStyle:"dashed",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.5)",cursor:"pointer"}}>
+                    <div style={{fontSize:24,marginBottom:4}}>🎬</div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold}}>Video auswählen</div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,marginTop:2}}>MP4, MOV, WebM · max 50MB</div>
+                  </div>
+                ):(
+                  <div style={{...gc,padding:"10px",marginBottom:10,borderColor:"rgba(212,175,55,.25)",background:"rgba(3,2,1,.65)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:24}}>🎬</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold,marginBottom:2}}>{newVideo.name}</div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted}}>{(newVideo.size/1024/1024).toFixed(1)} MB</div>
+                      </div>
+                      <button onClick={()=>setNewVideo(null)}
+                        style={{background:"rgba(224,92,106,.1)",border:"1px solid rgba(224,92,106,.3)",color:"#ff8a95",padding:"4px 8px",cursor:"pointer",borderRadius:6,fontFamily:"'Cinzel',serif",fontSize:7}}>✕</button>
+                    </div>
+                    <video src={newVideo.url} controls style={{width:"100%",marginTop:8,borderRadius:6,maxHeight:180}}/>
                   </div>
                 )}
                 <SL>INHALT</SL>
@@ -1681,6 +1747,15 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   );
                 })()}
                 <div style={{...gc,padding:"16px",background:"rgba(3,2,1,.78)"}}>
+                  {/* Video player */}
+                  {selectedEntry.video_url&&(
+                    <div style={{marginBottom:16,borderRadius:8,overflow:"hidden",background:"#000"}}>
+                      <video src={selectedEntry.video_url} controls playsInline
+                        style={{width:"100%",maxHeight:300,display:"block"}}
+                        poster=""
+                      />
+                    </div>
+                  )}
                   <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>{selectedEntry.title}</div>
                   <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>{selectedEntry.content}</div>
 
@@ -1840,7 +1915,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                   </div>
                 ):(
                   <BibleFeed
-                    entries={bibleEntries.filter(e=>bibleCategory==="alle"||(e.category||"")===bibleCategory)}
+                    entries={bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory)}
                     entryReactions={entryReactions}
                     entryComments={entryComments}
                     readEntries={readEntries}
@@ -2087,10 +2162,19 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
               <div style={{fontSize:20,color:"rgba(255,255,255,.6)",cursor:"pointer"}} onClick={()=>onOpen(entry)}>···</div>
             </div>
 
-            {/* Image */}
+            {/* Video or Image */}
+            {entry.video_url&&!imgs[0]&&(
+              <div style={{position:"relative",width:"100%",background:"#111",overflow:"hidden",cursor:"pointer",minHeight:180,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>onOpen(entry)}>
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:52,marginBottom:6}}>▶️</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(212,175,55,.6)",letterSpacing:2}}>VIDEO ANSEHEN</div>
+                </div>
+              </div>
+            )}
             {imgs[0]&&(
               <div style={{position:"relative",width:"100%",background:"#111",overflow:"hidden",cursor:"pointer",userSelect:"none"}}
                 onClick={()=>onOpen(entry)}>
+                {entry.video_url&&<div style={{position:"absolute",top:10,left:10,background:"rgba(0,0,0,.7)",borderRadius:12,padding:"3px 8px",fontFamily:"'Cinzel',serif",fontSize:7,color:"#D4AF37",zIndex:5,letterSpacing:1}}>🎬 VIDEO</div>}
                 <img src={imgs[0]} alt="" loading="lazy"
                   style={{width:"100%",display:"block",maxHeight:"90vw",objectFit:"cover"}}
                   onError={e=>{e.target.style.display="none";}}
