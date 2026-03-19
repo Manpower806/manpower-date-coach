@@ -1645,8 +1645,8 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                             objectFit:"cover",objectPosition:"center",display:"block",zIndex:4,
                             mixBlendMode:blendActive?"screen":"normal",
                             filter:blendActive
-                              ?"brightness(1.6) contrast(1.5) drop-shadow(0px 0px 2px #000) drop-shadow(0px 0px 5px #000) drop-shadow(0px 0px 10px #000) drop-shadow(3px 3px 0px #000) drop-shadow(-3px -3px 0px #000) drop-shadow(3px -3px 0px #000) drop-shadow(-3px 3px 0px #000)"
-                              :"none",
+                              ?"brightness(1.6) contrast(1.5) drop-shadow(0px 0px 2px #000) drop-shadow(0px 0px 5px #000) drop-shadow(0px 0px 12px #000) drop-shadow(0px 0px 20px #000) drop-shadow(3px 3px 0px #000) drop-shadow(-3px -3px 0px #000) drop-shadow(3px -3px 0px #000) drop-shadow(-3px 3px 0px #000)"
+                              :"drop-shadow(0px 0px 3px rgba(0,0,0,.9)) drop-shadow(0px 0px 6px rgba(0,0,0,.8)) drop-shadow(1px 1px 0px #000) drop-shadow(-1px -1px 0px #000)",
                             opacity: imgIdx===carouselIdx?1:0,
                             transition:"opacity 0.15s ease"
                           }}/>;
