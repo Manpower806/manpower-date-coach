@@ -137,6 +137,9 @@ export default function App({ user, onLogout }) {
   const [chatImg, setChatImg] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [chatResult, setChatResult] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [chatErr, setChatErr] = useState(null);
   const [chatDrag, setChatDrag] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -333,7 +336,7 @@ export default function App({ user, onLogout }) {
     }
     if(mainTab==="bible") loadBible();
     if(tab==="community") loadComm();
-    if(tab==="history") loadHist();
+    if(tab==="history") loadChatHistory();
   },[mainTab, tab]);
 
   // Validate session every 60 seconds - detect account sharing
@@ -511,6 +514,35 @@ export default function App({ user, onLogout }) {
       reader.readAsDataURL(file);
     })));
     setNewImages(prev=>[...prev,...conv].slice(0,20));
+  };
+
+  const loadChatHistory = async()=>{
+    setLoadingHistory(true);
+    const{data}=await supabase.from("chat_history")
+      .select("*")
+      .eq("user_id",user.id)
+      .order("created_at",{ascending:false})
+      .limit(50);
+    if(data) setChatHistory(data);
+    setLoadingHistory(false);
+  };
+
+  const saveChatEntry = async(type, inputData, result, tone)=>{
+    try{
+      await supabase.from("chat_history").insert({
+        user_id: user.id,
+        username: user.username,
+        type,
+        input_data: typeof inputData==="string"?inputData:JSON.stringify(inputData),
+        result: typeof result==="string"?result:JSON.stringify(result),
+        tone: tone||"",
+      });
+    }catch(e){ console.warn("History save failed:",e); }
+  };
+
+  const deleteChatEntry = async(id)=>{
+    await supabase.from("chat_history").delete().eq("id",id);
+    setChatHistory(h=>h.filter(e=>e.id!==id));
   };
 
   const loadProfile = async()=>{
@@ -836,9 +868,11 @@ Nur valides JSON: {"detectedLanguage":"...","profileAnalysis":"...","openers":[{
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const raw=data.content?.map(i=>i.text||"").join("")||"";
-      setOpenerResult(JSON.parse(raw.replace(/```json|```/g,"").trim()));
+      const openerParsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+      setOpenerResult(openerParsed);
       const nl={...localMem,totalOpeners:(localMem.totalOpeners||0)+1};
       setLocalMem(nl);saveLocal(nl);
+      saveChatEntry("opener",profileNote||"[Profilbilder]",openerParsed,openerLang);
     }catch(err){setOpenerErr("Fehler: "+(err.message||"Versuch es nochmal."));}
     setGenOpener(false);
   };
@@ -874,6 +908,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
       if(row) setCurrentId(row.id);
       const nl={...localMem,totalAnalyses:(localMem.totalAnalyses||0)+1};
       setLocalMem(nl);saveLocal(nl);
+      saveChatEntry("analyse","[Chat Screenshot]",parsed,tone);
     }catch(err){setChatErr("Fehler: "+(err.message||"Versuch es nochmal."));}
     setAnalyzing(false);
   };
@@ -1282,18 +1317,53 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             {/* ── HISTORY ── */}
             {tab==="history"&&(
               <div style={{animation:"fadeUp .3s ease"}}>
-                <SecTitle icon="📊" title="MEIN VERLAUF" sub="Deine Analyse-Geschichte"/>
-                {loadingHist?<Spin text="LADE…"/>:myHistory.length===0?(
-                  <div style={{textAlign:"center",padding:"32px 0",color:G.muted,fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3}}>NOCH KEINE ANALYSEN</div>
-                ):myHistory.map((s,i)=>(
-                  <div key={s.id||i} style={{...gc,padding:"11px 13px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(3,2,1,.72)"}}>
-                    <div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:G.gold,marginBottom:2}}>{s.vibe_score} · {s.dynamik}</div>
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted}}>{new Date(s.created_at).toLocaleDateString("de-DE")} · {s.tone}{s.situation?` · ${s.situation}`:""}</div>
+                <SecTitle icon="📊" title="MEIN VERLAUF" sub="Deine gespeicherten Analysen & Opener"/>
+                {loadingHistory?<Spin text="LADE…"/>:chatHistory.length===0?(
+                  <div style={{textAlign:"center",padding:"32px 0",color:G.muted,fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3}}>NOCH KEIN VERLAUF</div>
+                ):chatHistory.map((s,i)=>{
+                  let result={};
+                  try{result=JSON.parse(s.result);}catch{}
+                  const isAnalyse=s.type==="analyse";
+                  return (
+                    <div key={s.id||i} style={{...gc,padding:"12px 13px",marginBottom:8,background:"rgba(3,2,1,.72)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{fontSize:14}}>{isAnalyse?"⚔️":"💬"}</span>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:G.gold}}>{isAnalyse?"ANALYSE":"OPENER"}</div>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>{new Date(s.created_at).toLocaleDateString("de-DE")}</div>
+                          <button onClick={()=>deleteChatEntry(s.id)} style={{background:"none",border:"none",color:"rgba(224,92,106,.5)",cursor:"pointer",fontSize:12,padding:0}}>🗑️</button>
+                        </div>
+                      </div>
+                      {isAnalyse&&result.vibeScore&&(
+                        <div style={{display:"flex",gap:8,marginBottom:6}}>
+                          <div style={{...gc,flex:1,padding:"6px 10px",textAlign:"center",background:"rgba(212,175,55,.06)"}}>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:G.gold}}>{result.vibeScore}</div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:G.muted}}>VIBE</div>
+                          </div>
+                          <div style={{...gc,flex:1,padding:"6px 10px",textAlign:"center",background:"rgba(212,175,55,.06)"}}>
+                            <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:result.dynamik==="STARK"?"#5cb87a":result.dynamik==="SCHWACH"?"#e05c6a":G.gold}}>{result.dynamik||"-"}</div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:G.muted}}>DYNAMIK</div>
+                          </div>
+                        </div>
+                      )}
+                      {isAnalyse&&result.kurzanalyse&&(
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.65)",lineHeight:1.5,marginBottom:6}}>{result.kurzanalyse}</div>
+                      )}
+                      {!isAnalyse&&result.openers&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                          {result.openers.slice(0,2).map((op,j)=>(
+                            <div key={j} style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",background:"rgba(212,175,55,.05)",padding:"6px 8px",borderRadius:6,borderLeft:"2px solid rgba(212,175,55,.3)"}}>
+                              {op.text||op}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {s.tone&&<div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:G.muted,letterSpacing:2,marginTop:6}}>{s.tone.toUpperCase()}</div>}
                     </div>
-                    <div style={{fontSize:15}}>{s.feedback_type==="worked"?"✅":s.feedback_type==="failed"?"❌":s.feedback_type==="mixed"?"➡️":"⏳"}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
