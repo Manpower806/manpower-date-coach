@@ -167,6 +167,9 @@ export default function App({ user, onLogout }) {
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
+  const [storyOpen, setStoryOpen] = useState(null); // entry being shown as story
+  const [storyIdx, setStoryIdx] = useState(0);
+  const [storyProgress, setStoryProgress] = useState(0);
   const [newCategory, setNewCategory] = useState("");
   const [newVideo, setNewVideo] = useState(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -1334,6 +1337,37 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
               <div style={{height:1,background:`linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)`,marginTop:10}}/>
             </div>
 
+            {/* Stories Row */}
+            {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(
+              <div style={{overflowX:"auto",display:"flex",gap:12,paddingBottom:8,marginBottom:16,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+                {bibleEntries.slice(0,10).map((entry,i)=>{
+                  let imgs=[];
+                  try{imgs=JSON.parse(entry.image_url);}catch{if(entry.image_url)imgs=[entry.image_url];}
+                  const isRead=!!readEntries[entry.id];
+                  return (
+                    <div key={entry.id} onClick={()=>{setStoryOpen(entry);setStoryIdx(0);setStoryProgress(0);}} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
+                      {/* Ring */}
+                      <div style={{width:62,height:62,borderRadius:"50%",padding:2,background:isRead?"rgba(255,255,255,.15)":"linear-gradient(135deg,#D4AF37,#F5E27A,#8B6914,#D4AF37)"}}>
+                        <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#111",overflow:"hidden",border:"2px solid #000"}}>
+                          {imgs[0]?(
+                            <img src={imgs[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                          ):(
+                            <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,rgba(212,175,55,.3),rgba(139,105,20,.3))"}}>
+                              {entry.video_url?<span style={{fontSize:20}}>🎬</span>:<span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:"#D4AF37"}}>M</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Title */}
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:isRead?"rgba(255,255,255,.35)":"rgba(255,255,255,.8)",maxWidth:64,textAlign:"center",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.2}}>
+                        {entry.title||"Story"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Category Filter */}
             {!selectedEntry&&!showNewPost&&(
               <div style={{overflowX:"auto",display:"flex",gap:8,paddingBottom:8,marginBottom:12,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
@@ -1935,6 +1969,62 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
           MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
         </div>
       </div>
+
+      {/* ── STORY VIEWER ── */}
+      {storyOpen&&(()=>{
+        let imgs=[];
+        try{imgs=JSON.parse(storyOpen.image_url);}catch{if(storyOpen.image_url)imgs=[storyOpen.image_url];}
+        if(!Array.isArray(imgs))imgs=[];
+        const totalSlides = imgs.length||1;
+        return (
+          <div style={{position:"fixed",inset:0,zIndex:9999,background:"#000",display:"flex",flexDirection:"column",touchAction:"none"}}
+            onClick={e=>{
+              const x=e.clientX;
+              const w=window.innerWidth;
+              if(x<w*0.3){ if(storyIdx>0)setStoryIdx(i=>i-1); else setStoryOpen(null); }
+              else if(x>w*0.7){ if(storyIdx<totalSlides-1)setStoryIdx(i=>i+1); else setStoryOpen(null); }
+              else setStoryOpen(null);
+            }}>
+            {/* Progress bars */}
+            <div style={{display:"flex",gap:3,padding:"12px 12px 8px",position:"absolute",top:0,left:0,right:0,zIndex:10}}>
+              {Array.from({length:totalSlides}).map((_,i)=>(
+                <div key={i} style={{flex:1,height:2,borderRadius:1,background:i<storyIdx?"#fff":i===storyIdx?"rgba(255,255,255,.9)":"rgba(255,255,255,.3)"}}/>
+              ))}
+            </div>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"44px 16px 8px",position:"absolute",top:0,left:0,right:0,zIndex:10,background:"linear-gradient(to bottom,rgba(0,0,0,.6),transparent)"}}>
+              <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#D4AF37,#8B6914)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(212,175,55,.5)"}}>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:900,color:"#0a0806"}}>M</span>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:"#fff"}}>manpower_bruderschaft</div>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(255,255,255,.6)"}}>{storyOpen.category||"Manpower"}</div>
+              </div>
+              <button onClick={(e)=>{e.stopPropagation();setStoryOpen(null);}} style={{background:"none",border:"none",color:"rgba(255,255,255,.8)",fontSize:22,cursor:"pointer",padding:0}}>✕</button>
+            </div>
+            {/* Image */}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+              {imgs[storyIdx]?(
+                <img src={imgs[storyIdx]} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+              ):(
+                <div style={{textAlign:"center",color:"rgba(212,175,55,.6)"}}>
+                  <div style={{fontSize:48,marginBottom:12}}>{storyOpen.video_url?"🎬":"📖"}</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:2}}>{storyOpen.title}</div>
+                </div>
+              )}
+            </div>
+            {/* Title + Read More */}
+            <div style={{padding:"16px",background:"linear-gradient(to top,rgba(0,0,0,.85),transparent)",position:"absolute",bottom:0,left:0,right:0}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:6}}>{storyOpen.title}</div>
+              {storyOpen.content&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:10,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{storyOpen.content}</div>}
+              <button onClick={(e)=>{e.stopPropagation();setStoryOpen(null);openEntry(storyOpen);}}
+                style={{background:"rgba(212,175,55,.2)",border:"1px solid rgba(212,175,55,.4)",borderRadius:20,padding:"8px 20px",color:"#D4AF37",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,cursor:"pointer"}}>
+                VOLLSTÄNDIG LESEN →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PROFIL MODAL ── */}
       {showProfile&&(
