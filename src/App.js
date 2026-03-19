@@ -2042,7 +2042,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
             MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
           </div>
           <button onClick={()=>setShowLegal(true)}
-            style={{background:"none",border:"none",color:"rgba(212,175,55,.2)",fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:2,cursor:"pointer",textDecoration:"underline"}}>
+            style={{background:"none",border:"1px solid rgba(212,175,55,.15)",borderRadius:12,padding:"4px 12px",color:"rgba(212,175,55,.35)",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,cursor:"pointer"}}>
             DATENSCHUTZ & INFO
           </button>
         </div>
