@@ -647,6 +647,27 @@ export default function App({ user, onLogout }) {
     }
   };
 
+  const translatePost = async(title, textContent)=>{
+    try {
+      const res = await fetch("/api/claude", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:500,
+          messages:[{role:"user",content:`Translate the following from German to English. Keep the same tone and style. Return ONLY a JSON object with "title" and "content" keys, nothing else.
+
+Title: "${title||""}"
+Content: "${(textContent||"").slice(0,800)}"`}]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content?.[0]?.text||"").replace(/```json|```/g,"").trim();
+      const parsed = JSON.parse(raw);
+      return { title_en: parsed.title||"", content_en: parsed.content||"" };
+    } catch(e){ return { title_en: "", content_en: "" }; }
+  };
+
   const autoCategorizPost = async(title, textContent)=>{
     if(!title && !textContent) return "Mindset";
     // Simple keyword-based fallback that always works
@@ -718,6 +739,9 @@ ONE WORD:`}]
       }
       setSaveStatus("KATEGORIE WIRD ERMITTELT…");
       const finalCategory = newCategory || await autoCategorizPost(newTitle.trim(), newContent.trim());
+      // Auto-translate to English
+      setSaveStatus("ÜBERSETZE INS ENGLISCHE…");
+      const translation = await translatePost(newTitle.trim(), newContent.trim());
       // Upload video if selected
       let videoUrl = null;
       if(newVideo?.file){
@@ -738,6 +762,8 @@ ONE WORD:`}]
         created_by: user.username,
         category: finalCategory,
         video_url: videoUrl,
+        title_en: translation.title_en||"",
+        content_en: translation.content_en||"",
       });
       if(error){ alert("Fehler: "+error.message); setSavingPost(false); setSaveStatus(""); return; }
       setNewTitle(""); setNewContent(""); setNewImages([]); setBlendModes([]); setNewBgImage(null); setUseBgImage(false); setNewMusicUrl(""); setNewMusicStart(0); setNewMusicEnd(0); setShowNewPost(false); setNewCategory(""); setNewVideo(null);
@@ -1513,6 +1539,24 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                         🤖 {bibleEntries.filter(e=>!e.category).length} BEITRÄGE AUTO-KATEGORISIEREN
                       </button>
                     )}
+                    {bibleEntries.filter(e=>!e.title_en).length>0&&(
+                      <button onClick={async()=>{
+                        const untranslated=bibleEntries.filter(e=>!e.title_en);
+                        if(!window.confirm(`${untranslated.length} Beiträge übersetzen?`)) return;
+                        let done=0;
+                        for(const entry of untranslated){
+                          const t=await translatePost(entry.title,entry.content);
+                          if(t.title_en) await supabase.from("library").update({title_en:t.title_en,content_en:t.content_en}).eq("id",entry.id);
+                          done++;
+                          setSaveStatus(`${done}/${untranslated.length} übersetzt…`);
+                        }
+                        setSaveStatus("");
+                        await loadBible();
+                        alert("✅ Alle Beiträge übersetzt!");
+                      }} style={{width:"100%",marginTop:8,background:"rgba(92,184,122,.1)",border:"1px solid rgba(92,184,122,.25)",color:"rgba(92,184,122,.7)",padding:"10px",cursor:"pointer",borderRadius:8,fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2}}>
+                        🌐 {bibleEntries.filter(e=>!e.title_en).length} BEITRÄGE INS ENGLISCHE ÜBERSETZEN
+                      </button>
+                    )}
                     {saveStatus&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.6)",textAlign:"center",marginTop:8}}>{saveStatus}</div>}
                   </div>
                 )}
@@ -1862,8 +1906,12 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                       />
                     </div>
                   )}
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>{selectedEntry.title}</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>{selectedEntry.content}</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.gold,marginBottom:8,lineHeight:1.4}}>
+                    {lang==="en"&&selectedEntry.title_en?selectedEntry.title_en:selectedEntry.title}
+                  </div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.72)",lineHeight:1.85,whiteSpace:"pre-wrap"}}>
+                    {lang==="en"&&selectedEntry.content_en?selectedEntry.content_en:selectedEntry.content}
+                  </div>
 
                   {/* Reactions */}
                   <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:16,marginBottom:8}}>
@@ -2022,6 +2070,7 @@ Nur JSON: {"detectedLanguage":"...","vibeScore":"7.5/10","dynamik":"STARK|AUSGEW
                 ):(
                   <BibleFeed
                     entries={bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory)}
+                    lang={lang}
                     entryReactions={entryReactions}
                     entryComments={entryComments}
                     readEntries={readEntries}
@@ -2386,7 +2435,7 @@ function StoriesRow({entries, readEntries, onOpen}) {
   } catch(e){ return null; }
 }
 
-function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen}) {
+function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G, onOpen, onReact, onCommentOpen, lang}) {
   if(!entries||!entries.length) return null;
   try { return (
     <div style={{display:"flex",flexDirection:"column",background:"transparent"}}>
@@ -2481,8 +2530,8 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
               {/* Caption */}
               <div style={{marginBottom:4,cursor:"pointer"}} onClick={()=>onOpen(entry)}>
                 <span style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginRight:6}}>manpower_bruderschaft</span>
-                <span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.85)"}}>{(entry.title||"")}</span>
-                {entry.content&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.6)"}}> {(entry.content||"").slice(0,80)}{(entry.content||"").length>80?"…":""}</span>}
+                <span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.85)"}}>{(lang==="en"&&entry.title_en?entry.title_en:entry.title)||""}</span>
+                {(entry.content||entry.content_en)&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(255,255,255,.6)"}}> {(lang==="en"&&entry.content_en?entry.content_en:entry.content||"").slice(0,80)}{((lang==="en"&&entry.content_en?entry.content_en:entry.content)||"").length>80?"…":""}</span>}
               </div>
 
               {/* Comments */}
