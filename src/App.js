@@ -1416,7 +1416,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
               <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
               <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.4)",lineHeight:1.6}}>
                 <strong style={{color:"rgba(212,175,55,.5)",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:1}}>APP ≠ REAL LIFE</strong><br/>
-                Dieses Tool ist eine KI-gestützte Hilfestellung. Textnachrichten sind nur ein kleiner Teil der Anziehung – Körpersprache, Stimme und Präsenz im echten Leben sind weitaus wichtiger. Nutze den Coach als Lernwerkzeug, nicht als Ersatz für echte soziale Kompetenz.
+                Diese App ist ein Dating Tool, speziell für Männer der Manpower Bruderschaft. Textnachrichten sind nur ein kleiner Teil der Anziehung – Körpersprache, Stimme und Präsenz im echten Leben sind weitaus wichtiger. Nutze den Coach als Lernwerkzeug, nicht als Ersatz für echte soziale Kompetenz.
               </div>
             </div>
 
@@ -1473,13 +1473,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             )}
 
             {/* ── TIPS ── */}
-            {/* App vs Real Life Disclaimer */}
-            <div style={{...gc,padding:"10px 14px",marginTop:8,marginBottom:4,borderColor:"rgba(212,175,55,.1)",background:"rgba(3,2,1,.5)",display:"flex",gap:10,alignItems:"flex-start"}}>
-              <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
-              <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.35)",lineHeight:1.6}}>
-                <strong style={{color:"rgba(212,175,55,.4)",fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:1}}>TOOL HINWEIS:</strong> Diese App ist ein Dating Tool, speziell für die Männer der Manpower Bruderschaft. Textnachrichten sind kein Ersatz für echte Verbindung – im Real Life zählen Präsenz, Körpersprache und Energie weit mehr als perfekte Texte.
-              </div>
-            </div>
+
 
             {tab==="tips"&&(
               <div style={{animation:"fadeUp .3s ease"}}>
