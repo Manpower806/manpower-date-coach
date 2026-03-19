@@ -859,7 +859,7 @@ ONE WORD:`}]
       audio.play().catch(()=>{});
       audioRef.current = audio;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line
   },[]);
 
   const startEdit = (entry)=>{
