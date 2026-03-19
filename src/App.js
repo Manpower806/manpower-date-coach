@@ -114,6 +114,63 @@ const gc = {
   borderRadius:12,
 };
 
+function VideoThumb({ src }) {
+  const canvasRef = useRef(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!src) return;
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+
+    const tryCapture = (time) => {
+      video.currentTime = time;
+    };
+
+    video.addEventListener("loadedmetadata", () => {
+      // Try at 10% of duration or 1s, whichever is less
+      const seekTo = Math.min(video.duration * 0.1, 2);
+      tryCapture(seekTo > 0 ? seekTo : 0.5);
+    });
+
+    video.addEventListener("seeked", () => {
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        video.src = "";
+      } catch (e) {
+        setFailed(true);
+      }
+    });
+
+    video.addEventListener("error", () => setFailed(true));
+    video.src = src;
+
+    return () => { video.src = ""; };
+  }, [src]);
+
+  if (failed) {
+    return (
+      <div style={{width:"100%",height:220,background:"linear-gradient(135deg,#1a0d00,#2a1500)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontSize:48}}>🎬</span>
+      </div>
+    );
+  }
+
+  return (
+    <canvas ref={canvasRef}
+      style={{width:"100%",maxHeight:"90vw",display:"block",objectFit:"cover"}}
+    />
+  );
+}
+
 export default function App({ user, onLogout }) {
   const isAdmin = user?.username?.toLowerCase() === ADMIN_USERNAME;
   const [mainTab, setMainTab] = useState(null); // null=menu, coach, bible
@@ -422,19 +479,17 @@ export default function App({ user, onLogout }) {
   };
 
   const loadBible = async()=>{
-    setLoadingBible(true);
-    // Load entries first - show immediately
+    // Show cache immediately (no loading spinner if cache exists)
+    try{
+      const cached = localStorage.getItem("mp_bible_cache");
+      if(cached){ setBibleEntries(JSON.parse(cached)); setLoadingBible(false); }
+      else { setLoadingBible(true); }
+    }catch{ setLoadingBible(true); }
+    // Fetch fresh data in background
     const{data}=await supabase.from("library").select("*").order("created_at",{ascending:false});
     if(data){
       setBibleEntries(data);
-      // Cache for offline use
       try{ localStorage.setItem("mp_bible_cache", JSON.stringify(data)); }catch{}
-    } else {
-      // Try offline cache
-      try{
-        const cached = localStorage.getItem("mp_bible_cache");
-        if(cached) setBibleEntries(JSON.parse(cached));
-      }catch{}
     }
     setLoadingBible(false);
     // Load social data in background (non-blocking)
@@ -2482,7 +2537,7 @@ function StoriesRow({entries, readEntries, onOpen}) {
   try {
     return (
       <div style={{overflowX:"auto",display:"flex",gap:12,paddingBottom:8,marginBottom:16,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-        {entries.slice(0,10).map(entry=>{
+        {entries.filter(e=>!e.video_url).slice(0,10).map(entry=>{
           let imgs=[];
           try{const p=JSON.parse(entry.image_url);imgs=Array.isArray(p)?p:(p?[p]:[]);}catch{imgs=entry.image_url?[entry.image_url]:[]}
           const isRead=!!readEntries[entry.id];
@@ -2542,10 +2597,7 @@ function BibleFeed({entries, entryReactions, entryComments, readEntries, user, G
             {/* Video or Image */}
             {entry.video_url&&!imgs[0]&&(
               <div style={{position:"relative",width:"100%",background:"#000",overflow:"hidden",cursor:"pointer"}} onClick={()=>onOpen(entry)}>
-                <video src={entry.video_url+"#t=1"}
-                  style={{width:"100%",maxHeight:"90vw",display:"block",objectFit:"cover",pointerEvents:"none"}}
-                  preload="metadata" muted playsInline
-                />
+                <VideoThumb src={entry.video_url}/>
                 <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.3)"}}>
                   <div style={{width:58,height:58,borderRadius:"50%",background:"rgba(0,0,0,.55)",border:"2px solid rgba(212,175,55,.7)",display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <span style={{fontSize:24,color:"#D4AF37",marginLeft:4}}>▶</span>
