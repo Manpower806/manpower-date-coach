@@ -198,6 +198,7 @@ export default function App({ user, onLogout }) {
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
+  const filteredBibleEntries = useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory]);
   const [storyOpen, setStoryOpen] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
@@ -2170,7 +2171,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                   </div>
                 ):(
                   <BibleFeed
-                    entries={useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory])}
+                    entries={filteredBibleEntries}
                     lang={lang}
                     entryReactions={entryReactions}
                     entryComments={entryComments}
@@ -2578,7 +2579,7 @@ const BibleFeed = memo(function BibleFeed({entries, entryReactions, entryComment
               <div style={{position:"relative",width:"100%",background:"#111",overflow:"hidden",cursor:"pointer",userSelect:"none"}}
                 onClick={()=>onOpen(entry)}>
                 {entry.video_url&&<div style={{position:"absolute",top:10,left:10,background:"rgba(0,0,0,.7)",borderRadius:12,padding:"3px 8px",fontFamily:"'Cinzel',serif",fontSize:7,color:"#D4AF37",zIndex:5,letterSpacing:1}}>🎬 VIDEO</div>}
-                <img src={imgs[0]} alt="" loading="lazy"
+                <img src={imgs[0]} alt="" loading="eager" fetchPriority="high"
                   style={{width:"100%",display:"block",maxHeight:"90vw",objectFit:"cover"}}
                   onError={e=>{e.target.style.display="none";}}
                   draggable="false"
