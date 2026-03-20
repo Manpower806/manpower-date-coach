@@ -459,6 +459,15 @@ export default function App({ user, onLogout }) {
     if(data){
       setBibleEntries(data);
       try{ localStorage.setItem("mp_bible_cache", JSON.stringify(data)); }catch{}
+      // Preload audio for entries that have music (silent background preload)
+      data.filter(e=>e.music_url).slice(0,5).forEach(e=>{
+        try{
+          const a = new Audio(e.music_url.startsWith("http") ? e.music_url : "/"+e.music_url);
+          a.preload = "auto";
+          a.volume = 0;
+          // Just trigger load, don't play
+        }catch{}
+      });
     }
     setLoadingBible(false);
     // Load social data in background (non-blocking)
@@ -834,29 +843,28 @@ ONE WORD:`}]
       const end = entry.music_end||0;
       audio.preload = "auto";
       audio.volume = 0.7;
-      audio.currentTime = start;
       if(end>0){
-        // Loop between start and end - use setInterval for reliable looping
         audio.ontimeupdate = ()=>{
           if(audio.currentTime >= end - 0.1){
             audio.currentTime = start;
             audio.play().catch(()=>{});
           }
         };
-        // Extra safety: also catch onended in case it slips through
-        audio.onended = ()=>{
-          audio.currentTime = start;
-          audio.play().catch(()=>{});
-        };
+        audio.onended = ()=>{ audio.currentTime = start; audio.play().catch(()=>{}); };
       } else {
-        // Loop whole song from start
-        audio.onended = ()=>{
-          audio.currentTime = start;
-          audio.play().catch(()=>{});
-        };
+        audio.onended = ()=>{ audio.currentTime = start; audio.play().catch(()=>{}); };
       }
-      audio.loop = (end===0 && start===0); // native loop only when no custom range
-      audio.play().catch(()=>{});
+      audio.loop = (end===0 && start===0);
+      // Wait until enough data is loaded, then seek and play instantly
+      const doPlay = ()=>{
+        audio.currentTime = start;
+        audio.play().catch(()=>{});
+      };
+      if(audio.readyState >= 3){ // HAVE_FUTURE_DATA
+        doPlay();
+      } else {
+        audio.addEventListener("canplay", doPlay, {once:true});
+      }
       audioRef.current = audio;
     }
   // eslint-disable-next-line
