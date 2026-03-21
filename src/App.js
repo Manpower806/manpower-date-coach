@@ -1557,11 +1557,11 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           <div style={{animation:"fadeUp .3s ease"}}>
 
             {/* Header */}
-            <div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
+            {!selectedEntry&&<div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:G.gold,letterSpacing:3,marginBottom:4}}>📖 MANPOWER-BIBEL</div>
               <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:G.muted,lineHeight:1.6}}>Wissen · Prinzipien · Lektionen der Bruderschaft</div>
               <div style={{height:1,background:`linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)`,marginTop:10}}/>
-            </div>
+            </div>}
 
             {/* Stories Row */}
             {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(
