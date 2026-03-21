@@ -1062,7 +1062,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
       <div style={{position:"relative",zIndex:3,maxWidth:480,margin:"0 auto",padding:"0 12px 80px"}}>
 
         {/* HEADER */}
-        <header style={{textAlign:"center",padding:"24px 0 20px",marginBottom:20,position:"relative"}}>
+        {!selectedEntry&&<header style={{textAlign:"center",padding:"24px 0 20px",marginBottom:20,position:"relative"}}>
           <div style={{position:"absolute",bottom:0,left:"5%",right:"5%",height:1,background:"linear-gradient(90deg,transparent,rgba(212,175,55,.3),rgba(212,175,55,.3),transparent)"}}/>
           <div style={{width:54,height:54,margin:"0 auto 8px",position:"relative"}}>
             <div style={{width:"100%",height:"100%",border:"2px solid",borderColor:G.gold,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(3,2,1,0.7)",backdropFilter:"blur(10px)",animation:"glow 4s ease infinite"}}>
@@ -1088,7 +1088,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             )}
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
-        </header>
+        </header>}
 
         {/* OFFLINE BANNER */}
         {isOffline&&(
