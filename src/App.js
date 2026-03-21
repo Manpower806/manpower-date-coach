@@ -198,7 +198,7 @@ export default function App({ user, onLogout }) {
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
-  const filteredBibleEntries = useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?!e.video_url:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory]);
+  const filteredBibleEntries = useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory]);
   const [storyOpen, setStoryOpen] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
@@ -1062,7 +1062,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
       <div style={{position:"relative",zIndex:3,maxWidth:480,margin:"0 auto",padding:"0 12px 80px"}}>
 
         {/* HEADER */}
-        {!selectedEntry&&<header style={{textAlign:"center",padding:"24px 0 20px",marginBottom:20,position:"relative"}}>
+        <header style={{textAlign:"center",padding:"24px 0 20px",marginBottom:20,position:"relative"}}>
           <div style={{position:"absolute",bottom:0,left:"5%",right:"5%",height:1,background:"linear-gradient(90deg,transparent,rgba(212,175,55,.3),rgba(212,175,55,.3),transparent)"}}/>
           <div style={{width:54,height:54,margin:"0 auto 8px",position:"relative"}}>
             <div style={{width:"100%",height:"100%",border:"2px solid",borderColor:G.gold,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(3,2,1,0.7)",backdropFilter:"blur(10px)",animation:"glow 4s ease infinite"}}>
@@ -1088,7 +1088,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             )}
             <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
-        </header>}
+        </header>
 
         {/* OFFLINE BANNER */}
         {isOffline&&(
@@ -1557,11 +1557,11 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           <div style={{animation:"fadeUp .3s ease"}}>
 
             {/* Header */}
-            {!selectedEntry&&<div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
+            <div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
               <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:G.gold,letterSpacing:3,marginBottom:4}}>📖 MANPOWER-BIBEL</div>
               <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:G.muted,lineHeight:1.6}}>Wissen · Prinzipien · Lektionen der Bruderschaft</div>
               <div style={{height:1,background:`linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)`,marginTop:10}}/>
-            </div>}
+            </div>
 
             {/* Stories Row */}
             {!selectedEntry&&!showNewPost&&bibleEntries.length>0&&(
@@ -1995,7 +1995,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                       </div>
                       {/* Dot indicators */}
                       {imgs.length>1&&(
-                        <div style={{display:"flex",justifyContent:"center",gap:5,padding:"8px 0 28px",background:"rgba(3,2,1,.6)"}}>
+                        <div style={{display:"flex",justifyContent:"center",gap:5,padding:"8px 0",background:"rgba(3,2,1,.6)"}}>
                           {imgs.map((_,i)=>(
                             <div key={i} onClick={()=>setCarouselIdx(i)}
                               style={{width:carouselIdx===i?18:6,height:6,borderRadius:3,background:carouselIdx===i?"#D4AF37":"rgba(212,175,55,.3)",cursor:"pointer",transition:"all .25s"}}/>
