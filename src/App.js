@@ -1906,8 +1906,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
             {/* Single entry view */}
             {selectedEntry&&(
-              <div style={{position:"fixed",inset:0,zIndex:100,background:"#000",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-                <div style={{animation:"fadeUp .3s ease",position:"relative",minHeight:"100%"}}>
+              <div style={{animation:"fadeUp .3s ease",position:"relative"}}>
                 {/* Background image overlay */}
                 {selectedEntry.bg_image&&(
                   <div style={{position:"fixed",inset:0,zIndex:0,backgroundImage:`url(${selectedEntry.bg_image})`,backgroundSize:"cover",backgroundPosition:"center",opacity:.18,pointerEvents:"none"}}/>
