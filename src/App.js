@@ -1995,7 +1995,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                       </div>
                       {/* Dot indicators */}
                       {imgs.length>1&&(
-                        <div style={{display:"flex",justifyContent:"center",gap:5,padding:"8px 0",background:"rgba(3,2,1,.6)"}}>
+                        <div style={{display:"flex",justifyContent:"center",gap:5,padding:"8px 0 28px",background:"rgba(3,2,1,.6)"}}>
                           {imgs.map((_,i)=>(
                             <div key={i} onClick={()=>setCarouselIdx(i)}
                               style={{width:carouselIdx===i?18:6,height:6,borderRadius:3,background:carouselIdx===i?"#D4AF37":"rgba(212,175,55,.3)",cursor:"pointer",transition:"all .25s"}}/>
