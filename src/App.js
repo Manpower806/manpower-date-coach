@@ -1906,6 +1906,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
             {/* Single entry view */}
             {selectedEntry&&(
+              <div style={{position:"fixed",inset:0,zIndex:50,background:"#0a0800",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
               <div style={{animation:"fadeUp .3s ease",position:"relative"}}>
                 {/* Background image overlay */}
                 {selectedEntry.bg_image&&(
@@ -2166,6 +2167,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                 </div>
                 </div>{/* end relative z-1 */}
               </div>
+              </div>{/* end fixed fullscreen */}
             )}
 
             {/* Entry list */}
