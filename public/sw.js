@@ -1,5 +1,5 @@
-// Manpower Service Worker v4 - Offline + Push + iOS compatible
-const CACHE_NAME = 'manpower-v4';
+// Manpower Service Worker v5 - Offline + Push + iOS compatible
+const CACHE_NAME = 'manpower-v5';
 
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
