@@ -198,7 +198,7 @@ export default function App({ user, onLogout }) {
   const [newComment, setNewComment] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bibleCategory, setBibleCategory] = useState("alle");
-  const filteredBibleEntries = useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?true:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory]);
+  const filteredBibleEntries = useMemo(()=>bibleEntries.filter(e=>bibleCategory==="alle"?!e.video_url:bibleCategory==="Videos"?!!e.video_url:(e.category||"")===bibleCategory),[bibleEntries,bibleCategory]);
   const [storyOpen, setStoryOpen] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
