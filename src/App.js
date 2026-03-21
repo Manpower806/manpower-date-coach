@@ -2165,9 +2165,9 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                     </div>
                   )}
                 </div>
-                </div>{/* end relative z-1 */}
+                </div>
               </div>
-              </div>{/* end fixed fullscreen */}
+              </div>
             )}
 
             {/* Entry list */}
