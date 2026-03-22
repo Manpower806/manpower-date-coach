@@ -1148,7 +1148,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           const s=steps[onboardingStep];
           const isLast=onboardingStep===steps.length-1;
           return(
-            <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.97)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,.97)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
               <div style={{maxWidth:380,width:"100%",background:"rgba(12,8,2,.98)",border:"1px solid rgba(212,175,55,.3)",borderRadius:16,padding:"36px 24px",textAlign:"center"}}>
                 <div style={{fontSize:56,marginBottom:16}}>{s.icon}</div>
                 <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#D4AF37",marginBottom:6,letterSpacing:3}}>{s.title}</div>
