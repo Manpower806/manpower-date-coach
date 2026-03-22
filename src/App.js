@@ -207,7 +207,7 @@ export default function App({ user, onLogout }) {
   const [lang, setLang] = useState(()=>localStorage.getItem("mp_lang")||"de");
   const [showLegal, setShowLegal] = useState(false);
   useEffect(()=>{
-    if(showLegal){
+    if(showLegal||showOnboarding){
       document.body.style.overflow='hidden';
       document.body.style.position='fixed';
       document.body.style.width='100%';
@@ -221,7 +221,7 @@ export default function App({ user, onLogout }) {
       document.body.style.position='';
       document.body.style.width='';
     };
-  },[showLegal]);
+  },[showLegal,showOnboarding]);
   const [storyIdx, setStoryIdx] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
   const [newCategory, setNewCategory] = useState("");
