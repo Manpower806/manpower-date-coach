@@ -1631,51 +1631,28 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
               <div style={{animation:"fadeUp .3s ease"}}>
                 <SecTitle icon="📊" title="MEIN VERLAUF" sub="Deine gespeicherten Analysen & Opener"/>
                 {loadingHistory?<Spin text="LADE…"/>:chatHistory.length===0?(
-                  <div style={{textAlign:"center",padding:"32px 0",color:G.muted,fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3}}>NOCH KEIN VERLAUF</div>
-                ):chatHistory.map((s,i)=>{
-                  let result={};
-                  try{result=JSON.parse(s.result);}catch{}
-                  const isAnalyse=s.type==="analyse";
-                  return (
-                    <div key={s.id||i} style={{...gc,padding:"12px 13px",marginBottom:8,background:"rgba(3,2,1,.72)"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:14}}>{isAnalyse?"⚔️":"💬"}</span>
-                          <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:G.gold}}>{isAnalyse?"ANALYSE":"OPENER"}</div>
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:G.muted}}>{new Date(s.created_at).toLocaleDateString("de-DE")}</div>
-                          <button onClick={()=>deleteChatEntry(s.id)} style={{background:"none",border:"none",color:"rgba(224,92,106,.5)",cursor:"pointer",fontSize:12,padding:0}}>🗑️</button>
-                        </div>
-                      </div>
-                      {isAnalyse&&result.vibeScore&&(
-                        <div style={{display:"flex",gap:8,marginBottom:6}}>
-                          <div style={{...gc,flex:1,padding:"6px 10px",textAlign:"center",background:"rgba(212,175,55,.06)"}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:900,color:G.gold}}>{result.vibeScore}</div>
-                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:G.muted}}>VIBE</div>
-                          </div>
-                          <div style={{...gc,flex:1,padding:"6px 10px",textAlign:"center",background:"rgba(212,175,55,.06)"}}>
-                            <div style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:result.dynamik==="STARK"?"#5cb87a":result.dynamik==="SCHWACH"?"#e05c6a":G.gold}}>{result.dynamik||"-"}</div>
-                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:8,color:G.muted}}>DYNAMIK</div>
-                          </div>
-                        </div>
-                      )}
-                      {isAnalyse&&result.kurzanalyse&&(
-                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.65)",lineHeight:1.5,marginBottom:6}}>{result.kurzanalyse}</div>
-                      )}
-                      {!isAnalyse&&result.openers&&(
-                        <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                          {result.openers.slice(0,2).map((op,j)=>(
-                            <div key={j} style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",background:"rgba(212,175,55,.05)",padding:"6px 8px",borderRadius:6,borderLeft:"2px solid rgba(212,175,55,.3)"}}>
-                              {op.text||op}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {s.tone&&<div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:G.muted,letterSpacing:2,marginTop:6}}>{s.tone.toUpperCase()}</div>}
-                    </div>
-                  );
-                })}
+                  <div style={{textAlign:"center",padding:"40px 16px"}}>
+                    <div style={{fontSize:40,marginBottom:12,opacity:.3}}>📭</div>
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:3,color:G.muted}}>NOCH KEIN VERLAUF</div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.25)",marginTop:6}}>Generiere einen Opener oder analysiere einen Chat</div>
+                  </div>
+                ):(
+                  <>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(212,175,55,.35)",textAlign:"right",marginBottom:10}}>{chatHistory.length} Einträge</div>
+                    {chatHistory.map((s,i)=>{
+                      let result={};
+                      try{result=JSON.parse(s.result);}catch{}
+                      const isAnalyse=s.type==="analyse";
+                      const date=new Date(s.created_at);
+                      const dateStr=date.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+                      const timeStr=date.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+                      const [expanded,setExpanded]=[false,()=>{}]; // will use index trick below
+                      return (
+                        <HistoryCard key={s.id||i} entry={s} result={result} isAnalyse={isAnalyse} dateStr={dateStr} timeStr={timeStr} onDelete={()=>deleteChatEntry(s.id)} G={G} gold={G.gold}/>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             )}
 
@@ -2784,6 +2761,106 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
 // ── COMPONENTS ──────────────────────────────────────────────────────────────
 const gc2 = {background:"rgba(5,3,1,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12};
+function HistoryCard({entry, result, isAnalyse, dateStr, timeStr, onDelete, G, gold}){
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(null);
+
+  const copyText=(text,idx)=>{
+    navigator.clipboard.writeText(text).catch(()=>{});
+    setCopied(idx);
+    setTimeout(()=>setCopied(null),2000);
+  };
+
+  const vibeColor=result.vibeScore>=7?"#5cb87a":result.vibeScore>=4?"#D4AF37":"#E74C3C";
+
+  return(
+    <div style={{background:"rgba(15,10,2,.95)",border:"1px solid rgba(212,175,55,.2)",borderRadius:14,marginBottom:10,overflow:"hidden",transition:"all .2s"}}>
+      {/* Header row - always visible */}
+      <div onClick={()=>setExpanded(e=>!e)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:10,background:isAnalyse?"rgba(155,89,182,.15)":"rgba(212,175,55,.1)",border:`1px solid ${isAnalyse?"rgba(155,89,182,.3)":"rgba(212,175,55,.3)"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <span style={{fontSize:18}}>{isAnalyse?"⚔️":"💬"}</span>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:2,color:isAnalyse?"#9B59B6":gold,fontWeight:700}}>{isAnalyse?"ANALYSE":"OPENER"}</span>
+            {isAnalyse&&result.vibeScore&&(
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:9,fontWeight:900,color:vibeColor}}>{result.vibeScore}/10</span>
+            )}
+            {isAnalyse&&result.dynamik&&(
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:result.dynamik==="STARK"?"#5cb87a":result.dynamik==="SCHWACH"?"#E74C3C":gold,background:`${result.dynamik==="STARK"?"rgba(92,184,122":"rgba(212,175,55"},.1)`,padding:"2px 7px",borderRadius:8}}>{result.dynamik}</span>
+            )}
+          </div>
+          <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.4)"}}>{dateStr} · {timeStr}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={e=>{e.stopPropagation();onDelete();}} style={{background:"none",border:"none",color:"rgba(224,92,106,.4)",cursor:"pointer",fontSize:14,padding:4}}>🗑️</button>
+          <span style={{color:"rgba(212,175,55,.4)",fontSize:12,transition:"transform .2s",display:"inline-block",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}>▼</span>
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      {expanded&&(
+        <div style={{borderTop:"1px solid rgba(212,175,55,.1)",padding:"14px 16px"}}>
+          {isAnalyse&&(
+            <>
+              {result.kurzanalyse&&(
+                <div style={{background:"rgba(212,175,55,.05)",border:"1px solid rgba(212,175,55,.12)",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:6}}>🔍 ANALYSE</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.8)",lineHeight:1.6}}>{result.kurzanalyse}</div>
+                </div>
+              )}
+              {result.naechsterSchritt&&(
+                <div style={{background:"rgba(201,103,125,.07)",border:"1px solid rgba(201,103,125,.2)",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#C9677D",marginBottom:6}}>🎯 NÄCHSTER SCHRITT</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:"rgba(245,237,232,.8)",lineHeight:1.6}}>{result.naechsterSchritt}</div>
+                </div>
+              )}
+              {result.replies?.length>0&&(
+                <>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)",marginBottom:8}}>💬 ANTWORTEN</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {result.replies.map((r,i)=>(
+                      <div key={i} onClick={()=>copyText(r.text,i)} style={{background:copied===i?"rgba(212,175,55,.1)":"rgba(3,2,1,.5)",border:`1px solid ${copied===i?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}`,borderRadius:10,padding:"10px 12px",cursor:"pointer",transition:"all .2s"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                          <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.5)",letterSpacing:1}}>{r.label?.toUpperCase()}</span>
+                          <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copied===i?"#D4AF37":"rgba(212,175,55,.3)"}}>{copied===i?"✓ KOPIERT":"COPY"}</span>
+                        </div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.85)",lineHeight:1.5}}>{r.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          {!isAnalyse&&result.openers&&(
+            <>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.4)",marginBottom:8}}>💬 OPENER – TIPPE ZUM KOPIEREN</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {result.openers.map((op,i)=>(
+                  <div key={i} onClick={()=>copyText(op.text||op,i)} style={{background:copied===i?"rgba(212,175,55,.1)":"rgba(3,2,1,.5)",border:`1px solid ${copied===i?"rgba(212,175,55,.4)":"rgba(212,175,55,.12)"}`,borderRadius:10,padding:"10px 12px",cursor:"pointer",transition:"all .2s"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.5)",letterSpacing:1}}>{(op.style||"").toUpperCase()}</span>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copied===i?"#D4AF37":"rgba(212,175,55,.3)"}}>{copied===i?"✓ KOPIERT":"COPY"}</span>
+                    </div>
+                    <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.85)",lineHeight:1.5}}>{op.text||op}</div>
+                  </div>
+                ))}
+              </div>
+              {result.profilTipp&&(
+                <div style={{background:"rgba(39,174,96,.06)",border:"1px solid rgba(39,174,96,.2)",borderRadius:10,padding:"10px 12px",marginTop:8}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#27AE60",marginBottom:4}}>💡 TIPP</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",lineHeight:1.5}}>{result.profilTipp}</div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StoriesRow({entries, readEntries, onOpen}) {
   try {
     return (
