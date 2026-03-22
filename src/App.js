@@ -1306,27 +1306,29 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
                 <SL>📸 PROFILBILDER (bis zu 5)</SL>
                 <div className="dz"
-                  style={{...gc,padding:"20px 16px",textAlign:"center",marginBottom:8,borderStyle:"dashed",borderColor:openerDrag?"rgba(212,175,55,.5)":"rgba(212,175,55,.16)",background:"rgba(3,2,1,.6)"}}
+                  style={{background:openerDrag?"rgba(212,175,55,.08)":"rgba(8,5,1,.8)",border:`2px solid ${openerDrag?"rgba(212,175,55,.6)":"rgba(212,175,55,.25)"}`,borderRadius:16,padding:"28px 16px",textAlign:"center",marginBottom:10,transition:"all .2s",boxShadow:openerDrag?"0 0 24px rgba(212,175,55,.15)":"none",position:"relative",overflow:"hidden"}}
                   onClick={()=>profileRef.current?.click()}
                   onDragOver={e=>{e.preventDefault();setOpenerDrag(true);}}
                   onDragLeave={()=>setOpenerDrag(false)}
                   onDrop={onProfileDrop}>
-                  <div style={{fontSize:22,marginBottom:6,opacity:.5}}>📸</div>
-                  <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:1,color:G.gold,marginBottom:2}}>Profilbilder hinzufügen</div>
-                  <div style={{fontFamily:"'Lato',sans-serif",color:G.muted,fontSize:11}}>Bio · Fotos · Hobbys</div>
+                  <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,175,55,.06),transparent 70%)",pointerEvents:"none"}}/>
+                  <div style={{fontSize:36,marginBottom:10}}>📸</div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:2,color:"#D4AF37",marginBottom:6,fontWeight:700}}>PROFILBILDER HINZUFÜGEN</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",color:"rgba(212,175,55,.45)",fontSize:11,marginBottom:8}}>Bio · Fotos · Hobbys</div>
+                  <div style={{display:"inline-block",background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",borderRadius:20,padding:"5px 14px",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"rgba(212,175,55,.6)"}}>BIS ZU 5 BILDER</div>
                 </div>
                 <input ref={profileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>await handleProfileFiles(e.target.files)}/>
 
                 {profileImgs.length>0&&(
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4,marginBottom:10}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:12}}>
                     {profileImgs.map((img,i)=>(
-                      <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",border:"1px solid rgba(212,175,55,.2)"}}>
-                        <img src={img.dataUrl} alt="" style={{width:"100%",height:56,objectFit:"cover",display:"block"}}/>
+                      <div key={i} style={{position:"relative",borderRadius:10,overflow:"hidden",border:"1px solid rgba(212,175,55,.3)",boxShadow:"0 2px 8px rgba(0,0,0,.4)"}}>
+                        <img src={img.dataUrl} alt="" style={{width:"100%",height:60,objectFit:"cover",display:"block"}}/>
                         <button onClick={()=>setProfileImgs(prev=>prev.filter((_,j)=>j!==i))}
-                          style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,.85)",border:"none",color:"#ff7b7b",width:16,height:16,borderRadius:"50%",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                          style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,.85)",border:"none",color:"#ff7b7b",width:18,height:18,borderRadius:"50%",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
                       </div>
                     ))}
-                    {profileImgs.length<5&&<div className="dz" onClick={()=>profileRef.current?.click()} style={{height:56,border:"1px dashed rgba(212,175,55,.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(212,175,55,.3)",fontSize:18,background:"rgba(3,2,1,.5)"}}>+</div>}
+                    {profileImgs.length<5&&<div className="dz" onClick={()=>profileRef.current?.click()} style={{height:60,border:"1px dashed rgba(212,175,55,.25)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(212,175,55,.4)",fontSize:22,background:"rgba(212,175,55,.03)"}}>+</div>}
                   </div>
                 )}
 
@@ -1411,7 +1413,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
               <div style={{animation:"fadeUp .3s ease"}}>
                 <SecTitle icon="⚔" title="CHAT-ANALYSE" sub="Screenshot → KI erkennt Sprache → Antworten in Chat-Sprache"/>
                 <div className="dz"
-                  style={{...gc,padding:chatImg?0:"32px 18px",textAlign:"center",cursor:chatImg?"default":"pointer",marginBottom:14,overflow:"hidden",borderColor:chatDrag?"rgba(212,175,55,.45)":"rgba(212,175,55,.14)",background:"rgba(3,2,1,.65)"}}
+                  style={{background:chatImg?"rgba(8,5,1,.8)":chatDrag?"rgba(212,175,55,.08)":"rgba(8,5,1,.8)",border:`2px solid ${chatDrag?"rgba(212,175,55,.6)":chatImg?"rgba(212,175,55,.3)":"rgba(212,175,55,.25)"}`,borderRadius:16,padding:chatImg?0:"28px 18px",textAlign:"center",cursor:chatImg?"default":"pointer",marginBottom:14,overflow:"hidden",transition:"all .2s",boxShadow:chatDrag?"0 0 24px rgba(212,175,55,.15)":"none",position:"relative"}}
                   onClick={()=>!chatImg&&chatRef.current?.click()}
                   onDragOver={e=>{e.preventDefault();setChatDrag(true);}}
                   onDragLeave={()=>setChatDrag(false)}
@@ -1428,9 +1430,11 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                     </div>
                   ):(
                     <>
-                      <div style={{fontSize:22,marginBottom:7,opacity:.45}}>📸</div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:1,color:G.gold,marginBottom:2}}>Chat-Screenshot hinzufügen</div>
-                      <div style={{fontFamily:"'Lato',sans-serif",color:G.muted,fontSize:11}}>Tippen oder ziehen</div>
+                      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,175,55,.06),transparent 70%)",pointerEvents:"none"}}/>
+                      <div style={{fontSize:36,marginBottom:10}}>💬</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:2,color:"#D4AF37",marginBottom:6,fontWeight:700}}>CHAT-SCREENSHOT HOCHLADEN</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",color:"rgba(212,175,55,.45)",fontSize:11,marginBottom:8}}>Tippen oder ziehen</div>
+                      <div style={{display:"inline-block",background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",borderRadius:20,padding:"5px 14px",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"rgba(212,175,55,.6)"}}>KI ERKENNT SPRACHE AUTOMATISCH</div>
                     </>
                   )}
                 </div>
