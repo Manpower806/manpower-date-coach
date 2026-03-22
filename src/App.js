@@ -1139,20 +1139,20 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"clamp(18px,5vw,26px)",letterSpacing:5,background:`linear-gradient(90deg,${G.gold2},${G.gold},${G.gold3},${G.gold},${G.gold2})`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"shimmer 5s linear infinite",marginBottom:2}}>MANPOWER</div>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:7,color:"rgba(212,175,55,.45)",marginBottom:14}}>BRUDERSCHAFT</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,flexWrap:"nowrap",overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2,maxWidth:"100%"}}>
-            <div onClick={()=>{setShowProfile(true);loadProfile();}} style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.22)",borderRadius:18,padding:"4px 11px",cursor:"pointer"}}>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:900,color:G.gold,letterSpacing:1,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{isAdmin?"👑":"👤"}</span>
-              <span style={{fontFamily:"'Cinzel',serif",fontSize:10,fontWeight:700,color:G.gold,letterSpacing:2,textShadow:"0 0 10px rgba(212,175,55,.4)"}}>{profile.display_name||user?.username?.toUpperCase()}</span>
+            <div onClick={()=>{setShowProfile(true);loadProfile();}} style={{display:"flex",alignItems:"center",gap:5,background:"rgba(212,175,55,.15)",border:"1px solid rgba(212,175,55,.45)",borderRadius:18,padding:"6px 13px",cursor:"pointer",boxShadow:"0 2px 8px rgba(212,175,55,.15)"}}>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:900,color:G.gold,letterSpacing:1}}>{isAdmin?"👑":"👤"}</span>
+              <span style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:"#F5E27A",letterSpacing:2}}>{profile.display_name||user?.username?.toUpperCase()}</span>
             </div>
             <span style={{color:"rgba(212,175,55,.2)",fontSize:10}}>|</span>
             <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:0,color:"rgba(212,175,55,.35)"}}>{localMem.totalAnalyses||0} · {localMem.totalOpeners||0}</span>
-            {isAdmin&&<button onClick={()=>{setShowAdminPanel(true);loadAdminData();}} style={{background:"rgba(201,103,125,.08)",border:"1px solid rgba(201,103,125,.25)",color:"#e8a0b0",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16}}>⚙️ ADMIN</button>}
+            {isAdmin&&<button onClick={()=>{setShowAdminPanel(true);loadAdminData();}} style={{background:"rgba(201,103,125,.12)",border:"1px solid rgba(201,103,125,.4)",color:"#e8a0b0",padding:"6px 12px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16}}>⚙️ ADMIN</button>}
             {"serviceWorker" in navigator && "PushManager" in window && (
               <button onClick={pushEnabled?unsubscribePush:subscribePush} disabled={pushLoading}
-                style={{background:pushEnabled?"rgba(92,184,122,.1)":"rgba(212,175,55,.07)",border:`1px solid ${pushEnabled?"rgba(92,184,122,.3)":"rgba(212,175,55,.2)"}`,color:pushEnabled?"#5cb87a":"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s"}}>
+                style={{background:pushEnabled?"rgba(92,184,122,.15)":"rgba(212,175,55,.12)",border:`1px solid ${pushEnabled?"rgba(92,184,122,.5)":"rgba(212,175,55,.4)"}`,color:pushEnabled?"#5cb87a":"rgba(212,175,55,.8)",padding:"6px 12px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s"}}>
                 {pushLoading?"…":pushEnabled?"🔔":"🔕"}
               </button>
             )}
-            <button onClick={onLogout} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.2)",color:"rgba(212,175,55,.5)",padding:"4px 10px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
+            <button onClick={onLogout} style={{background:"rgba(212,175,55,.12)",border:"1px solid rgba(212,175,55,.4)",color:"rgba(212,175,55,.85)",padding:"6px 12px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,borderRadius:16,transition:"all .2s",display:"flex",alignItems:"center",gap:4}}>🚪 <span>LOGOUT</span></button>
           </div>
         </header>}
 
@@ -1174,7 +1174,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             {icon:"🍑🫦",title:"KI DATE COACH",sub:"SO FUNKTIONIERT ES",text:"1. Wähle OPENER GENERATOR\n2. Lade bis zu 5 Profilbilder der Frau hoch\n3. Beschreibe kurz ihr Profil (optional)\n4. Wähle ihre Sprache\n5. Tippe OPENER GENERIEREN → du erhältst 5 maßgeschneiderte Nachrichten"},
             {icon:"💬",title:"CHAT ANALYSE",sub:"CHATS ANALYSIEREN",text:"1. Wähle ANALYSE im Coach\n2. Mache einen Screenshot des Chats\n3. Lade ihn hoch\n4. Der Coach analysiert den Chat und gibt dir konkrete Handlungsempfehlungen\n5. Du kannst auch eingeben was du schreiben wolltest – der Coach verbessert es"},
             {icon:"📖",title:"MANPOWER-BIBEL",sub:"SO NUTZT DU SIE",text:"Scrolle durch die Beiträge wie bei Instagram. Tippe auf einen Beitrag um ihn vollständig zu lesen. Reagiere mit 🔥💯👑💪🎯 und hinterlasse Kommentare. Nutze die Kategorien oben um zu filtern."},
-            {icon:"👥",title:"BRUDERSCHAFT",sub:"DEINE BRÜDER",text:"Unter BRUDERSCHAFT siehst du alle aktiven Mitglieder. Fülle dein Profil aus – tippe oben auf deinen Namen – damit deine Brüder dich kennenlernen."},
+            {icon:"👥",title:"BRUDERSCHAFT",sub:"DEINE BRÜDER",text:"Unter BRUDERSCHAFT siehst du alle aktiven Mitglieder.\n\n🟢 Grüner Punkt = ONLINE (aktiv in den letzten 5 Minuten)\n🔴 Roter Punkt = OFFLINE\n\nFülle dein Profil aus – tippe oben auf deinen Namen – damit deine Brüder dich kennenlernen."},
             {icon:"🔮",title:"INNER CIRCLE",sub:"NUR FÜR DICH",text:"Schreib deine komplette Situation – Beziehung, Trennung, Business, Mindset. Die KI gibt dir eine ehrliche, direkte Einschätzung wie ein echter Bruder. Nur du siehst das."},
             {icon:"🔔",title:"PUSH NACHRICHTEN",sub:"IMMER AUF DEM LAUFENDEN",text:"Tippe oben auf die 🔔 Glocke um Push-Benachrichtigungen zu aktivieren.\n\nDu wirst benachrichtigt wenn:\n· Ein neuer Bibel-Beitrag erscheint\n· Jemand deinen Kommentar beantwortet\n\nDie 🔕 bedeutet deaktiviert, 🔔 bedeutet aktiv."},
             {icon:"🔒",title:"VERTRAULICHKEIT",sub:"WICHTIG",text:"Diese App und ihre Inhalte sind streng vertraulich. Teile nichts aus der Bibel oder dem Coach nach außen. Was in der Bruderschaft bleibt, bleibt in der Bruderschaft."},
@@ -2403,18 +2403,23 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                   const initials=(member.display_name||member.username||"?").slice(0,2).toUpperCase();
                   const avatarBg=member.avatar_color||"#D4AF37";
                   const isOnline=member.last_seen&&(Date.now()-new Date(member.last_seen).getTime())<5*60*1000;
+                  const dotColor=isOnline?"#5cb87a":"#E74C3C";
+                  const dotLabel=isOnline?"ONLINE":"OFFLINE";
                   return(
                     <div key={member.id} style={{background:"rgba(30,22,5,.95)",border:"1px solid rgba(212,175,55,.3)",borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
                       <div style={{position:"relative",flexShrink:0}}>
                         <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(212,175,55,.5)"}}>
                           <span style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#fff"}}>{initials}</span>
                         </div>
-                        {isOnline&&<div style={{position:"absolute",bottom:1,right:1,width:12,height:12,borderRadius:"50%",background:"#5cb87a",border:"2px solid #0a0800"}}/>}
+                        <div style={{position:"absolute",bottom:1,right:1,width:12,height:12,borderRadius:"50%",background:dotColor,border:"2px solid #0a0800",boxShadow:isOnline?"0 0 6px rgba(92,184,122,.6)":"none"}}/>
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#F5E27A",letterSpacing:1,marginBottom:3}}>
-                          {member.display_name||member.username}
-                          {member.id===user.id&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.5)",marginLeft:6}}>· Du</span>}
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:"#F5E27A",letterSpacing:1}}>
+                            {member.display_name||member.username}
+                            {member.id===user.id&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.5)",marginLeft:6}}>· Du</span>}
+                          </div>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:1,color:dotColor,background:`${dotColor}18`,padding:"2px 7px",borderRadius:8,border:`1px solid ${dotColor}44`}}>{dotLabel}</div>
                         </div>
                         {member.city&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:3}}>📍 {member.city}</div>}
                         {member.bio&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(255,255,255,.75)",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{member.bio}</div>}
