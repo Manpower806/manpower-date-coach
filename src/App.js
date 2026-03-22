@@ -1344,29 +1344,60 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
 
                 {openerResult&&(
                   <div style={{animation:"fadeUp .35s ease"}}>
-                    <Card icon="🌍" label="SPRACHE" bl={G.rose}><div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:G.rose2}}>{openerResult.detectedLanguage}</div></Card>
-                    <Card icon="🔍" label="PROFIL-ANALYSE" bl={G.gold}><Bod>{openerResult.profileAnalysis}</Bod></Card>
-                    <SL>💬 ANTIPPEN ZUM KOPIEREN</SL>
-                    <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:12}}>
-                      {openerResult.openers?.map((o,i)=>(
-                        <div key={i} className="rc" onClick={()=>copyOpener(o.text,i)}
-                          style={{...gc,padding:"12px 13px",borderColor:copiedOpener===i?"rgba(212,175,55,.45)":"rgba(212,175,55,.14)",background:"rgba(3,2,1,.75)"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.gold,opacity:.7}}>{o.style?.toUpperCase()}</span>
-                            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedOpener===i?G.gold:"rgba(212,175,55,.25)"}}>{copiedOpener===i?"✓":"COPY"}</span>
+                    {/* Header stats row */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                      <div style={{background:"linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04))",border:"1px solid rgba(212,175,55,.25)",borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
+                        <div style={{fontSize:20,marginBottom:4}}>🌍</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:4}}>SPRACHE</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,color:G.rose2}}>{openerResult.detectedLanguage}</div>
+                      </div>
+                      <div style={{background:"linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04))",border:"1px solid rgba(212,175,55,.25)",borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
+                        <div style={{fontSize:20,marginBottom:4}}>🔍</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:4}}>PROFIL</div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(245,237,232,.7)",lineHeight:1.4}}>{(openerResult.profileAnalysis||"").slice(0,60)}…</div>
+                      </div>
+                    </div>
+
+                    {/* Opener Cards */}
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.5)",marginBottom:10,textAlign:"center"}}>💬 TIPPE ZUM KOPIEREN</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+                      {openerResult.openers?.map((o,i)=>{
+                        const styleColors=["#D4AF37","#C0392B","#8E44AD","#27AE60","#2980B9"];
+                        const color=styleColors[i]||G.gold;
+                        return(
+                          <div key={i} className="rc" onClick={()=>copyOpener(o.text,i)}
+                            style={{background:copiedOpener===i?"rgba(212,175,55,.12)":"rgba(15,10,2,.9)",border:`1px solid ${copiedOpener===i?"rgba(212,175,55,.6)":"rgba(212,175,55,.2)"}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .2s",boxShadow:copiedOpener===i?"0 0 20px rgba(212,175,55,.15)":"none"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <div style={{width:3,height:16,borderRadius:2,background:color}}/>
+                                <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:color,fontWeight:700}}>{o.style?.toUpperCase()}</span>
+                              </div>
+                              <span style={{fontFamily:"'Cinzel',serif",fontSize:8,color:copiedOpener===i?"#D4AF37":"rgba(212,175,55,.3)",background:copiedOpener===i?"rgba(212,175,55,.15)":"transparent",padding:"3px 8px",borderRadius:8,border:`1px solid ${copiedOpener===i?"rgba(212,175,55,.4)":"rgba(212,175,55,.15)"}`,transition:"all .2s"}}>
+                                {copiedOpener===i?"✓ KOPIERT":"COPY"}
+                              </span>
+                            </div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:15,lineHeight:1.65,color:"rgba(255,255,255,.92)",marginBottom:8,fontWeight:500}}>{o.text}</div>
+                            {o.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.45)",fontStyle:"italic",borderTop:"1px solid rgba(212,175,55,.08)",paddingTop:7}}>💡 {o.warum}</div>}
                           </div>
-                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:14,lineHeight:1.6,color:G.text,marginBottom:5,fontWeight:500}}>{o.text}</div>
-                          {o.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.4)",fontStyle:"italic"}}>💡 {o.warum}</div>}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:10}}>
-                      <Card icon="💡" label="TIPP" bl={G.green}><Bod>{openerResult.profilTipp}</Bod></Card>
-                      <Card icon="🚫" label="VERMEIDEN" bl={G.red}><Bod>{openerResult.vermeiden}</Bod></Card>
+
+                    {/* Tips row */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                      <div style={{background:"rgba(39,174,96,.07)",border:"1px solid rgba(39,174,96,.25)",borderRadius:12,padding:"12px 14px"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#27AE60",marginBottom:6}}>💡 TIPP</div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",lineHeight:1.5}}>{openerResult.profilTipp}</div>
+                      </div>
+                      <div style={{background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.25)",borderRadius:12,padding:"12px 14px"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#E74C3C",marginBottom:6}}>🚫 VERMEIDEN</div>
+                        <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.7)",lineHeight:1.5}}>{openerResult.vermeiden}</div>
+                      </div>
                     </div>
+
                     <div style={{textAlign:"center"}}>
                       <button onClick={()=>{setProfileImgs([]);setProfileNote("");setOpenerResult(null);setOpenerLang("auto");}}
-                        style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"6px 18px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:18,border:"1px solid rgba(212,175,55,.14)"}}>
+                        style={{...gc,background:"rgba(3,2,1,.7)",color:"rgba(212,175,55,.4)",padding:"8px 22px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,borderRadius:18,border:"1px solid rgba(212,175,55,.14)"}}>
                         🔄 NEUES PROFIL
                       </button>
                     </div>
@@ -1446,41 +1477,83 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                 {chatErr&&<Err>{chatErr}</Err>}
                 {chatResult&&(
                   <div style={{animation:"fadeUp .38s ease"}}>
-                    {chatResult.detectedLanguage&&(
-                      <div style={{...gc,padding:"7px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:7,background:"rgba(3,2,1,.72)"}}>
-                        <span>🌍</span>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.42)"}}>SPRACHE · </span>
-                        <span style={{fontFamily:"'Cinzel',serif",fontSize:10,color:G.gold,fontWeight:700}}>{chatResult.detectedLanguage}</span>
+                    {/* Score Banner */}
+                    <div style={{background:"linear-gradient(135deg,rgba(212,175,55,.15),rgba(212,175,55,.05))",border:"1px solid rgba(212,175,55,.3)",borderRadius:14,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-around"}}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:4}}>VIBE SCORE</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:28,fontWeight:900,color:"#D4AF37"}}>{chatResult.vibeScore}<span style={{fontSize:14}}>/10</span></div>
                       </div>
-                    )}
-                    <div style={{display:"flex",gap:6,marginBottom:8}}>
-                      <ScCard label="VIBE" val={chatResult.vibeScore} color={G.gold}/>
-                      <ScCard label="DYNAMIK" val={chatResult.dynamik} color={POWER_COLORS[chatResult.dynamik]||G.gold} right/>
-                    </div>
-                    <Card icon="🔍" label="ANALYSE" bl={G.gold}><Bod>{chatResult.kurzanalyse}</Bod></Card>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
-                      <Card icon="✅" label="STÄRKEN" bl={G.green} sm>{(chatResult.staerken||[]).map((s,i)=><Sm key={i}>· {s}</Sm>)}</Card>
-                      <Card icon="⚡" label="VERBESSERN" bl="#e67e22" sm>{(chatResult.verbesserungen||[]).map((v,i)=><Sm key={i}>· {v}</Sm>)}</Card>
-                    </div>
-                    <Card icon="🧠" label="PSYCHO-INSIGHT" bl="#9b59b6"><Bod>{chatResult.psychoInsight}</Bod></Card>
-                    <Card icon="🎯" label="NÄCHSTER SCHRITT" bl={G.rose}>
-                      <div style={{fontFamily:"'Lato',sans-serif",color:G.rose2,fontSize:13,fontWeight:700,lineHeight:1.65}}>{chatResult.naechsterSchritt}</div>
-                    </Card>
-                    <SL>ANTWORTEN — ANTIPPEN</SL>
-                    <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
-                      {chatResult.replies?.map((r,i)=>(
-                        <div key={i} className="rc" onClick={()=>copyReply(r.text,i,r.label)}
-                          style={{...gc,padding:"11px 12px",borderColor:copiedIdx===i?"rgba(212,175,55,.45)":"rgba(212,175,55,.12)",background:"rgba(3,2,1,.74)"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:G.gold,opacity:.65}}>{r.label?.toUpperCase()}</span>
-                            <span style={{fontFamily:"'Cinzel',serif",fontSize:7,color:copiedIdx===i?G.gold:"rgba(212,175,55,.22)"}}>{copiedIdx===i?"✓":"COPY"}</span>
-                          </div>
-                          <div style={{fontFamily:"'Lato',sans-serif",fontSize:14,lineHeight:1.6,color:G.text,marginBottom:4}}>{r.text}</div>
-                          {r.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.38)",fontStyle:"italic"}}>💡 {r.warum}</div>}
+                      <div style={{width:1,height:40,background:"rgba(212,175,55,.2)"}}/>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:4}}>DYNAMIK</div>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,color:POWER_COLORS[chatResult.dynamik]||G.gold}}>{chatResult.dynamik}</div>
+                      </div>
+                      {chatResult.detectedLanguage&&<>
+                        <div style={{width:1,height:40,background:"rgba(212,175,55,.2)"}}/>
+                        <div style={{textAlign:"center"}}>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"rgba(212,175,55,.5)",marginBottom:4}}>SPRACHE</div>
+                          <div style={{fontFamily:"'Cinzel',serif",fontSize:12,fontWeight:700,color:G.rose2}}>{chatResult.detectedLanguage}</div>
                         </div>
-                      ))}
+                      </>}
                     </div>
-                    <div style={{...gc,padding:"12px",borderColor:"rgba(212,175,55,.18)",background:"rgba(3,2,1,.78)"}}>
+
+                    {/* Analyse */}
+                    <div style={{background:"rgba(15,10,2,.9)",border:"1px solid rgba(212,175,55,.2)",borderRadius:14,padding:"14px 16px",marginBottom:10}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"rgba(212,175,55,.6)",marginBottom:8}}>🔍 ANALYSE</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.85)",lineHeight:1.7}}>{chatResult.kurzanalyse}</div>
+                    </div>
+
+                    {/* Stärken & Verbessern */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                      <div style={{background:"rgba(39,174,96,.07)",border:"1px solid rgba(39,174,96,.25)",borderRadius:12,padding:"12px 14px"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#27AE60",marginBottom:8}}>✅ STÄRKEN</div>
+                        {(chatResult.staerken||[]).map((s,i)=><div key={i} style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.75)",lineHeight:1.6}}>· {s}</div>)}
+                      </div>
+                      <div style={{background:"rgba(230,126,34,.07)",border:"1px solid rgba(230,126,34,.25)",borderRadius:12,padding:"12px 14px"}}>
+                        <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,color:"#E67E22",marginBottom:8}}>⚡ VERBESSERN</div>
+                        {(chatResult.verbesserungen||[]).map((v,i)=><div key={i} style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.75)",lineHeight:1.6}}>· {v}</div>)}
+                      </div>
+                    </div>
+
+                    {/* Psycho Insight */}
+                    <div style={{background:"rgba(155,89,182,.07)",border:"1px solid rgba(155,89,182,.25)",borderRadius:14,padding:"14px 16px",marginBottom:10}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:"#9B59B6",marginBottom:8}}>🧠 PSYCHO-INSIGHT</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.85)",lineHeight:1.7}}>{chatResult.psychoInsight}</div>
+                    </div>
+
+                    {/* Nächster Schritt */}
+                    <div style={{background:"linear-gradient(135deg,rgba(201,103,125,.12),rgba(201,103,125,.04))",border:"1px solid rgba(201,103,125,.3)",borderRadius:14,padding:"14px 16px",marginBottom:12}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:G.rose2,marginBottom:8}}>🎯 NÄCHSTER SCHRITT</div>
+                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:14,color:G.rose2,fontWeight:700,lineHeight:1.65}}>{chatResult.naechsterSchritt}</div>
+                    </div>
+
+                    {/* Reply Cards */}
+                    <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:3,color:"rgba(212,175,55,.5)",marginBottom:10,textAlign:"center"}}>💬 ANTWORTEN – TIPPE ZUM KOPIEREN</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
+                      {chatResult.replies?.map((r,i)=>{
+                        const styleColors=["#D4AF37","#C0392B","#8E44AD","#27AE60","#2980B9"];
+                        const color=styleColors[i]||G.gold;
+                        return(
+                          <div key={i} className="rc" onClick={()=>copyReply(r.text,i,r.label)}
+                            style={{background:copiedIdx===i?"rgba(212,175,55,.12)":"rgba(15,10,2,.9)",border:`1px solid ${copiedIdx===i?"rgba(212,175,55,.6)":"rgba(212,175,55,.2)"}`,borderRadius:14,padding:"14px 16px",cursor:"pointer",transition:"all .2s",boxShadow:copiedIdx===i?"0 0 20px rgba(212,175,55,.15)":"none"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <div style={{width:3,height:16,borderRadius:2,background:color}}/>
+                                <span style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,color:color,fontWeight:700}}>{r.label?.toUpperCase()}</span>
+                              </div>
+                              <span style={{fontFamily:"'Cinzel',serif",fontSize:8,color:copiedIdx===i?"#D4AF37":"rgba(212,175,55,.3)",background:copiedIdx===i?"rgba(212,175,55,.15)":"transparent",padding:"3px 8px",borderRadius:8,border:`1px solid ${copiedIdx===i?"rgba(212,175,55,.4)":"rgba(212,175,55,.15)"}`,transition:"all .2s"}}>
+                                {copiedIdx===i?"✓ KOPIERT":"COPY"}
+                              </span>
+                            </div>
+                            <div style={{fontFamily:"'Lato',sans-serif",fontSize:15,lineHeight:1.65,color:"rgba(255,255,255,.92)",marginBottom:8,fontWeight:500}}>{r.text}</div>
+                            {r.warum&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.45)",fontStyle:"italic",borderTop:"1px solid rgba(212,175,55,.08)",paddingTop:7}}>💡 {r.warum}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Community Feedback */}
+                    <div style={{background:"rgba(3,2,1,.78)",border:"1px solid rgba(212,175,55,.18)",borderRadius:12,padding:"12px"}}>
                       <div style={{fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:3,color:"rgba(212,175,55,.45)",textAlign:"center",marginBottom:3}}>🌐 COMMUNITY FEEDBACK</div>
                       <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:G.muted,textAlign:"center",marginBottom:10}}>Verbessert die App für alle</div>
                       {!feedback?(
