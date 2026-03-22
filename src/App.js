@@ -185,6 +185,8 @@ export default function App({ user, onLogout }) {
   // bible
   const [bibleEntries, setBibleEntries] = useState([]);
   const [loadingBible, setLoadingBible] = useState(false);
+  const [membersList, setMembersList] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [loginLogs, setLoginLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -400,6 +402,7 @@ export default function App({ user, onLogout }) {
       setTimeout(()=>{ setDailyMotiv(msg); localStorage.setItem("mp_motiv_date_"+user?.username, today); }, 1500);
     }
     if(mainTab==="bible") loadBible();
+    if(mainTab==="members") loadMembers();
     if(tab==="community") loadComm();
     if(tab==="history") loadChatHistory();
   },[mainTab, tab]);
@@ -501,6 +504,13 @@ export default function App({ user, onLogout }) {
         setEntryComments(g);
       }
     }catch(e){ console.warn("Social load failed:",e); }
+  };
+
+  const loadMembers = async()=>{
+    setLoadingMembers(true);
+    const{data}=await supabase.from("members").select("id,username,display_name,city,bio,avatar_color,last_seen").eq("active",true).order("last_seen",{ascending:false});
+    if(data) setMembersList(data);
+    setLoadingMembers(false);
   };
 
   const markRead = async(entryId)=>{
@@ -1171,7 +1181,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
         {/* MAIN TAB SWITCHER */}
         {!mainTab ? (
           <div style={{display:"flex",flexDirection:"column",gap:14,marginTop:10,marginBottom:16}}>
-            {[["coach","🍑🫦","KI DATE COACH","Opener · Analyse · Community"],["bible","📖","MANPOWER-BIBEL","Wissen · Prinzipien · Lektionen"]].map(([key,icon,label,sub])=>(
+            {[["coach","🍑🫦","KI DATE COACH","Opener · Analyse · Community"],["bible","📖","MANPOWER-BIBEL","Wissen · Prinzipien · Lektionen"],["members","👥","BRUDERSCHAFT","Mitglieder · Profile · Community"]].map(([key,icon,label,sub])=>(
               <div key={key} className="maintab" onClick={()=>setMainTab(key)}
                 style={{...gc,padding:"30px 20px",textAlign:"center",cursor:"pointer",
                   background:"rgba(3,2,1,.78)",borderColor:"rgba(212,175,55,.22)",
@@ -2245,6 +2255,46 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           </button>
         </div>
       </div>
+
+      {/* ── BRUDERSCHAFT MEMBERS ── */}
+      {mainTab==="members"&&(
+        <div style={{animation:"fadeUp .3s ease"}}>
+          <div style={{textAlign:"center",marginBottom:20,marginTop:6}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:G.gold,letterSpacing:3,marginBottom:4}}>👥 BRUDERSCHAFT</div>
+            <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:G.muted}}>Mitglieder der Bruderschaft</div>
+            <div style={{height:1,background:"linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)",marginTop:10}}/>
+          </div>
+          <button onClick={()=>setMainTab(null)} style={{...gc,background:"rgba(3,2,1,.7)",color:G.gold,padding:"8px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,borderRadius:18,border:"1px solid rgba(212,175,55,.2)",marginBottom:16,display:"flex",alignItems:"center",gap:6}}>← MENÜ</button>
+          {loadingMembers?<Spin text="LADE MITGLIEDER…"/>:(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {membersList.map(member=>{
+                const initials=(member.display_name||member.username||"?").slice(0,2).toUpperCase();
+                const avatarBg=member.avatar_color||"#D4AF37";
+                const isOnline=member.last_seen&&(Date.now()-new Date(member.last_seen).getTime())<5*60*1000;
+                return(
+                  <div key={member.id} style={{...gc,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,borderColor:"rgba(212,175,55,.15)"}}>
+                    <div style={{position:"relative",flexShrink:0}}>
+                      <div style={{width:48,height:48,borderRadius:"50%",background:avatarBg,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(212,175,55,.3)"}}>
+                        <span style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:"#fff"}}>{initials}</span>
+                      </div>
+                      {isOnline&&<div style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#5cb87a",border:"2px solid #0a0800"}}/>}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:11,fontWeight:700,color:G.gold,letterSpacing:1,marginBottom:2}}>
+                        {member.display_name||member.username}
+                        {member.id===user.id&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:9,color:"rgba(212,175,55,.4)",marginLeft:6}}>· Du</span>}
+                      </div>
+                      {member.city&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(255,255,255,.4)",marginBottom:2}}>📍 {member.city}</div>}
+                      {member.bio&&<div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(255,255,255,.6)",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{member.bio}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+              {membersList.length===0&&<div style={{textAlign:"center",padding:"40px 16px",color:G.muted,fontFamily:"'Lato',sans-serif",fontSize:13}}>Keine Mitglieder gefunden</div>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── STORY VIEWER ── */}
       {storyOpen&&(()=>{ try {
