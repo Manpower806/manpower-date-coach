@@ -302,6 +302,18 @@ export default function App({ user, onLogout }) {
       body: JSON.stringify({ subscriptions, title, body, type }),
     });
   };
+
+  const sendPushToUser = async (userId, title, body) => {
+    if(!userId) return;
+    const { data: subs } = await supabase.from("push_subscriptions").select("*").eq("user_id", userId);
+    if (!subs?.length) return;
+    const subscriptions = subs.map(s => ({ subscription: JSON.parse(s.subscription), lang: s.lang }));
+    await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptions, title, body, type: "comment" }),
+    });
+  };
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -527,6 +539,17 @@ export default function App({ user, onLogout }) {
     await supabase.from("entry_comments").insert({entry_id:entryId,user_id:user.id,username:user.username,text:newComment.trim()});
     setNewComment("");
     loadComments(entryId);
+    // Notify entry creator if it's not the same user
+    try{
+      const entry = bibleEntries.find(e=>e.id===entryId);
+      if(entry && entry.created_by && entry.created_by !== user.id){
+        sendPushToUser(
+          entry.created_by,
+          "💬 Neuer Kommentar",
+          `${user.username} hat kommentiert: "${newComment.trim().slice(0,60)}${newComment.trim().length>60?"…":""}"`
+        );
+      }
+    }catch(e){}
   };
 
   const loadComm=async()=>{
