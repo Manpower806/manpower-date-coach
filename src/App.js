@@ -187,6 +187,9 @@ export default function App({ user, onLogout }) {
   const [loadingBible, setLoadingBible] = useState(false);
   const [membersList, setMembersList] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [talkInput, setTalkInput] = useState("");
+  const [talkResult, setTalkResult] = useState("");
+  const [talkLoading, setTalkLoading] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [loginLogs, setLoginLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -512,6 +515,35 @@ export default function App({ user, onLogout }) {
     const{data}=await supabase.from("members").select("id,username,display_name,city,bio,avatar_color,last_seen").eq("active",true).order("last_seen",{ascending:false});
     if(data) setMembersList(data);
     setLoadingMembers(false);
+  };
+
+  const sendTalk = async()=>{
+    if(!talkInput.trim()) return;
+    setTalkLoading(true);
+    setTalkResult("");
+    try{
+      const res = await fetch("/api/claude",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          messages:[{role:"user",content:talkInput.trim()}],
+          system:`Du bist ein direkter, ehrlicher Bruder aus der Manpower Bruderschaft. Kein Weichspülen, keine leeren Phrasen. Du gibst echte, klare Einschätzungen – wie ein Freund der die Wahrheit sagt. 
+
+Wenn jemand seine Situation teilt analysierst du:
+1. Was wirklich los ist (ehrliche Einschätzung der Situation)
+2. Was der Mann jetzt konkret tun sollte (Mindset, nächste Schritte)
+3. Was langfristig wichtig ist (Zukunft, Business, Leben)
+
+Ton: direkt, männlich, motivierend aber realistisch. Keine therapeutische Sprache. Rede ihn als Bruder an. Maximal 400 Wörter.`,
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(b=>b.text||"").join("") || "";
+      setTalkResult(text);
+    }catch(e){
+      setTalkResult("Fehler beim Verbinden. Versuche es erneut.");
+    }
+    setTalkLoading(false);
   };
 
   const markRead = async(entryId)=>{
@@ -1143,6 +1175,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             {icon:"💬",title:"CHAT ANALYSE",sub:"CHATS ANALYSIEREN",text:"1. Wähle ANALYSE im Coach\n2. Mache einen Screenshot des Chats\n3. Lade ihn hoch\n4. Der Coach analysiert den Chat und gibt dir konkrete Handlungsempfehlungen\n5. Du kannst auch eingeben was du schreiben wolltest – der Coach verbessert es"},
             {icon:"📖",title:"MANPOWER-BIBEL",sub:"SO NUTZT DU SIE",text:"Scrolle durch die Beiträge wie bei Instagram. Tippe auf einen Beitrag um ihn vollständig zu lesen. Reagiere mit 🔥💯👑💪🎯 und hinterlasse Kommentare. Nutze die Kategorien oben um zu filtern."},
             {icon:"👥",title:"BRUDERSCHAFT",sub:"DEINE BRÜDER",text:"Unter BRUDERSCHAFT siehst du alle aktiven Mitglieder. Fülle dein Profil aus – tippe oben auf deinen Namen – damit deine Brüder dich kennenlernen."},
+            {icon:"🔮",title:"INNER CIRCLE",sub:"NUR FÜR DICH",text:"Schreib deine komplette Situation – Beziehung, Trennung, Business, Mindset. Die KI gibt dir eine ehrliche, direkte Einschätzung wie ein echter Bruder. Nur du siehst das."},
             {icon:"🔒",title:"VERTRAULICHKEIT",sub:"WICHTIG",text:"Diese App und ihre Inhalte sind streng vertraulich. Teile nichts aus der Bibel oder dem Coach nach außen. Was in der Bruderschaft bleibt, bleibt in der Bruderschaft."},
           ];
           const s=steps[onboardingStep];
@@ -1195,7 +1228,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
         {/* MAIN TAB SWITCHER */}
         {!mainTab ? (
           <div style={{display:"flex",flexDirection:"column",gap:14,marginTop:10,marginBottom:16}}>
-            {[["coach","🍑🫦","KI DATE COACH","Opener · Analyse · Community"],["bible","📖","MANPOWER-BIBEL","Wissen · Prinzipien · Lektionen"],["members","👥","BRUDERSCHAFT","Mitglieder · Profile · Community"]].map(([key,icon,label,sub])=>(
+            {[["coach","🍑🫦","KI DATE COACH","Opener · Analyse · Community"],["bible","📖","MANPOWER-BIBEL","Wissen · Prinzipien · Lektionen"],["members","👥","BRUDERSCHAFT","Mitglieder · Profile · Community"],["talk","🔮","INNER CIRCLE","Deine Story · KI Einschätzung · Vertraulich"]].map(([key,icon,label,sub])=>(
               <div key={key} className="maintab" onClick={()=>setMainTab(key)}
                 style={{...gc,padding:"30px 20px",textAlign:"center",cursor:"pointer",
                   background:"rgba(3,2,1,.78)",borderColor:"rgba(212,175,55,.22)",
@@ -2313,6 +2346,52 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                 })}
                 {membersList.length===0&&<div style={{textAlign:"center",padding:"40px 16px",color:G.muted,fontFamily:"'Lato',sans-serif",fontSize:13}}>Keine Mitglieder gefunden</div>}
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── INNER CIRCLE ── */}
+      {mainTab==="talk"&&(
+        <div style={{position:"fixed",inset:0,zIndex:50,background:"#0a0800",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"0 0 40px"}}>
+          <div style={{animation:"fadeUp .3s ease",padding:"0 16px"}}>
+            <div style={{textAlign:"center",marginBottom:20,marginTop:24}}>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:900,color:G.gold,letterSpacing:3,marginBottom:4}}>🔮 INNER CIRCLE</div>
+              <div style={{fontFamily:"'Lato',sans-serif",fontSize:12,color:G.muted,marginBottom:4}}>Nur für dich sichtbar · Vertraulich · Direkt</div>
+              <div style={{height:1,background:"linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)",marginTop:10}}/>
+            </div>
+            <button onClick={()=>{setMainTab(null);setTalkInput("");setTalkResult("");}} style={{...gc,background:"rgba(3,2,1,.7)",color:G.gold,padding:"8px 16px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:2,borderRadius:18,border:"1px solid rgba(212,175,55,.2)",marginBottom:16,display:"flex",alignItems:"center",gap:6}}>← MENÜ</button>
+
+            {!talkResult?(
+              <>
+                <div style={{...gc,padding:16,marginBottom:14,borderColor:"rgba(212,175,55,.15)"}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(212,175,55,.6)",letterSpacing:2,marginBottom:10}}>DEINE SITUATION</div>
+                  <textarea
+                    value={talkInput}
+                    onChange={e=>setTalkInput(e.target.value)}
+                    placeholder="Schreib alles was dich beschäftigt. Beziehung, Trennung, Business, Mindset, Leben... Kein Filter nötig. Dein Bruder hört zu."
+                    style={{width:"100%",minHeight:200,background:"transparent",border:"none",outline:"none",color:"rgba(245,237,232,.85)",fontFamily:"'Lato',sans-serif",fontSize:13,lineHeight:1.7,resize:"vertical",boxSizing:"border-box"}}
+                  />
+                </div>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(212,175,55,.3)",textAlign:"center",marginBottom:14}}>
+                  🔒 Niemand außer dir sieht das hier
+                </div>
+                <button onClick={sendTalk} disabled={talkLoading||!talkInput.trim()}
+                  style={{width:"100%",background:talkLoading||!talkInput.trim()?"rgba(212,175,55,.06)":"linear-gradient(135deg,#3d2800,#7a5500,#D4AF37,#F5E27A,#D4AF37,#7a5500,#3d2800)",backgroundSize:"250% auto",border:"none",borderRadius:10,padding:"15px 16px",color:talkLoading||!talkInput.trim()?"rgba(212,175,55,.22)":"#1a0d00",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:12,letterSpacing:3,cursor:talkLoading||!talkInput.trim()?"not-allowed":"pointer",animation:talkLoading||!talkInput.trim()?"none":"shimmer 3s linear infinite"}}>
+                  {talkLoading?"🔮 DEIN BRUDER DENKT NACH…":"🔮 INNER CIRCLE ÖFFNEN"}
+                </button>
+              </>
+            ):(
+              <>
+                <div style={{...gc,padding:16,marginBottom:14,borderColor:"rgba(212,175,55,.2)"}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"rgba(212,175,55,.6)",letterSpacing:2,marginBottom:12}}>🔮 DEIN BRUDER SPRICHT</div>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.85)",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{talkResult}</div>
+                </div>
+                <button onClick={()=>{setTalkResult("");setTalkInput("");}}
+                  style={{width:"100%",background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",borderRadius:10,padding:"13px",color:G.gold,fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:3,cursor:"pointer"}}>
+                  ↩ NEUES GESPRÄCH
+                </button>
+              </>
             )}
           </div>
         </div>
