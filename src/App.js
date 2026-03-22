@@ -2028,11 +2028,25 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
                   <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:16,marginBottom:8}}>
                     {["🔥","💯","👑","💪","🎯"].map(emoji=>{
                       const reacted=(entryReactions[selectedEntry.id]?.[emoji]||[]).includes(user.username);
-                      const count=(entryReactions[selectedEntry.id]?.[emoji]||[]).length;
-                      return <button key={emoji} onClick={()=>toggleReaction(selectedEntry.id,emoji)}
-                        style={{background:reacted?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${reacted?"rgba(212,175,55,.5)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"5px 10px",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",gap:4}}>
-                        {emoji}{count>0&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:reacted?"#D4AF37":"rgba(255,255,255,.5)"}}>{count}</span>}
-                      </button>;
+                      const reactors=(entryReactions[selectedEntry.id]?.[emoji]||[]);
+                      const count=reactors.length;
+                      return (
+                        <div key={emoji} style={{position:"relative"}}>
+                          <button onClick={()=>toggleReaction(selectedEntry.id,emoji)}
+                            style={{background:reacted?"rgba(212,175,55,.2)":"rgba(255,255,255,.05)",border:`1px solid ${reacted?"rgba(212,175,55,.5)":"rgba(255,255,255,.1)"}`,borderRadius:20,padding:"5px 10px",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",gap:4}}>
+                            {emoji}{count>0&&<span style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:reacted?"#D4AF37":"rgba(255,255,255,.5)"}}>{count}</span>}
+                          </button>
+                          {count>0&&(
+                            <div style={{position:"absolute",bottom:"110%",left:"50%",transform:"translateX(-50%)",background:"rgba(10,8,0,.95)",border:"1px solid rgba(212,175,55,.3)",borderRadius:8,padding:"6px 10px",whiteSpace:"nowrap",zIndex:999,pointerEvents:"none",minWidth:80}}>
+                              <div style={{fontFamily:"'Cinzel',serif",fontSize:7,color:"rgba(212,175,55,.6)",letterSpacing:1,marginBottom:3}}>{emoji} REAKTIONEN</div>
+                              {reactors.map((r,i)=>(
+                                <div key={i} style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(255,255,255,.8)",lineHeight:1.6}}>👤 {r}</div>
+                              ))}
+                              <div style={{position:"absolute",bottom:-4,left:"50%",transform:"translateX(-50%)",width:8,height:8,background:"rgba(10,8,0,.95)",border:"1px solid rgba(212,175,55,.3)",borderTop:"none",borderLeft:"none",transform:"translateX(-50%) rotate(45deg)"}}/>
+                            </div>
+                          )}
+                        </div>
+                      );
                     })}
                   </div>
 
@@ -2627,8 +2641,21 @@ const BibleFeed = memo(function BibleFeed({entries, entryReactions, entryComment
 
               {/* Likes */}
               {totalReactions>0&&(
-                <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:5}}>
-                  {totalReactions} {totalReactions===1?"Reaktion":"Reaktionen"}
+                <div style={{marginBottom:5}}>
+                  <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:3}}>
+                    {totalReactions} {totalReactions===1?"Reaktion":"Reaktionen"}
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                    {["🔥","💯","👑","💪","🎯"].map(emoji=>{
+                      const reactors=(entryReactions[entry.id]?.[emoji]||[]);
+                      if(!reactors.length) return null;
+                      return (
+                        <div key={emoji} style={{fontFamily:"'Lato',sans-serif",fontSize:10,color:"rgba(255,255,255,.5)"}}>
+                          {emoji} {reactors.join(", ")}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
