@@ -1176,6 +1176,7 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
             {icon:"📖",title:"MANPOWER-BIBEL",sub:"SO NUTZT DU SIE",text:"Scrolle durch die Beiträge wie bei Instagram. Tippe auf einen Beitrag um ihn vollständig zu lesen. Reagiere mit 🔥💯👑💪🎯 und hinterlasse Kommentare. Nutze die Kategorien oben um zu filtern."},
             {icon:"👥",title:"BRUDERSCHAFT",sub:"DEINE BRÜDER",text:"Unter BRUDERSCHAFT siehst du alle aktiven Mitglieder. Fülle dein Profil aus – tippe oben auf deinen Namen – damit deine Brüder dich kennenlernen."},
             {icon:"🔮",title:"INNER CIRCLE",sub:"NUR FÜR DICH",text:"Schreib deine komplette Situation – Beziehung, Trennung, Business, Mindset. Die KI gibt dir eine ehrliche, direkte Einschätzung wie ein echter Bruder. Nur du siehst das."},
+            {icon:"🔔",title:"PUSH NACHRICHTEN",sub:"IMMER AUF DEM LAUFENDEN",text:"Tippe oben auf die 🔔 Glocke um Push-Benachrichtigungen zu aktivieren.\n\nDu wirst benachrichtigt wenn:\n· Ein neuer Bibel-Beitrag erscheint\n· Jemand deinen Kommentar beantwortet\n\nDie 🔕 bedeutet deaktiviert, 🔔 bedeutet aktiv."},
             {icon:"🔒",title:"VERTRAULICHKEIT",sub:"WICHTIG",text:"Diese App und ihre Inhalte sind streng vertraulich. Teile nichts aus der Bibel oder dem Coach nach außen. Was in der Bruderschaft bleibt, bleibt in der Bruderschaft."},
           ];
           const s=steps[onboardingStep];
