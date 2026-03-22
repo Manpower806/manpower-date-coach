@@ -1135,34 +1135,79 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
         )}
 
         {/* ONBOARDING */}
-        {showOnboarding&&(
-          <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.95)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-            <div style={{maxWidth:380,width:"100%",background:"rgba(12,8,2,.95)",border:"1px solid rgba(212,175,55,.3)",borderRadius:12,padding:"32px 24px",textAlign:"center"}}>
-              <div style={{fontSize:48,marginBottom:16}}>👑</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#D4AF37",marginBottom:8,letterSpacing:3}}>WILLKOMMEN</div>
-              <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:4,color:"rgba(212,175,55,.5)",marginBottom:20}}>MANPOWER BRUDERSCHAFT</div>
-              <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.7)",lineHeight:1.8,marginBottom:24}}>
-                Du bist jetzt Teil der Elite.<br/>
-                Hier findest du KI-gestütztes Dating-Coaching, die Manpower-Bibel und das Wissen der Bruderschaft.
+        {showOnboarding&&(()=>{
+          const steps=[
+            {
+              icon:"👑",
+              title:"WILLKOMMEN",
+              sub:"MANPOWER BRUDERSCHAFT",
+              text:"Du bist jetzt offiziell Teil der Elite. Diese App ist dein privates Werkzeug – exklusiv für eingeladene Mitglieder der Bruderschaft.",
+            },
+            {
+              icon:"🍑🫦",
+              title:"KI DATE COACH",
+              sub:"SO FUNKTIONIERT ES",
+              text:"1. Wähle OPENER GENERATOR\n2. Lade bis zu 5 Profilbilder der Frau hoch\n3. Beschreibe kurz ihr Profil (optional)\n4. Wähle ihre Sprache\n5. Tippe OPENER GENERIEREN → du erhältst 5 maßgeschneiderte Nachrichten",
+            },
+            {
+              icon:"💬",
+              title:"CHAT ANALYSE",
+              sub:"CHATS ANALYSIEREN",
+              text:"1. Wähle ANALYSE im Coach\n2. Mache einen Screenshot des Chats\n3. Lade ihn hoch\n4. Der Coach analysiert den Chat und gibt dir konkrete Handlungsempfehlungen\n5. Du kannst auch eingeben was du schreiben wolltest – der Coach verbessert es",
+            },
+            {
+              icon:"📖",
+              title:"MANPOWER-BIBEL",
+              sub:"SO NUTZT DU SIE",
+              text:"Scrolle durch die Beiträge wie bei Instagram. Tippe auf einen Beitrag um ihn vollständig zu lesen. Reagiere mit 🔥💯👑💪🎯 und hinterlasse Kommentare. Nutze die Kategorien oben um zu filtern.",
+            },
+            {
+              icon:"👥",
+              title:"BRUDERSCHAFT",
+              sub:"DEINE BRÜDER",
+              text:"Unter BRUDERSCHAFT siehst du alle aktiven Mitglieder. Fülle dein Profil aus – tippe oben auf deinen Namen – damit deine Brüder dich kennenlernen.",
+            },
+            {
+              icon:"🔒",
+              title:"VERTRAULICHKEIT",
+              sub:"WICHTIG",
+              text:"Diese App und ihre Inhalte sind streng vertraulich. Teile nichts aus der Bibel oder dem Coach nach außen. Was in der Bruderschaft bleibt, bleibt in der Bruderschaft.",
+            },
+          ];
+          const [step, setStep] = useState(0);
+          const isLast = step===steps.length-1;
+          const s = steps[step];
+          return(
+            <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.97)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+              <div style={{maxWidth:380,width:"100%",background:"rgba(12,8,2,.98)",border:"1px solid rgba(212,175,55,.3)",borderRadius:16,padding:"36px 24px",textAlign:"center"}}>
+                <div style={{fontSize:56,marginBottom:16}}>{s.icon}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:900,color:"#D4AF37",marginBottom:6,letterSpacing:3}}>{s.title}</div>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:8,letterSpacing:4,color:"rgba(212,175,55,.45)",marginBottom:20}}>{s.sub}</div>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:13,color:"rgba(245,237,232,.75)",lineHeight:1.8,marginBottom:28,minHeight:80,whiteSpace:"pre-line",textAlign:"left"}}>{s.text}</div>
+                {/* Dots */}
+                <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:24}}>
+                  {steps.map((_,i)=>(
+                    <div key={i} style={{width:i===step?20:6,height:6,borderRadius:3,background:i===step?"#D4AF37":"rgba(212,175,55,.2)",transition:"all .3s"}}/>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  {step>0&&(
+                    <button onClick={()=>setStep(s=>s-1)}
+                      style={{flex:1,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",borderRadius:8,padding:"12px",color:"rgba(212,175,55,.6)",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2,cursor:"pointer"}}>
+                      ← ZURÜCK
+                    </button>
+                  )}
+                  <button onClick={()=>{
+                    if(isLast){setShowOnboarding(false);localStorage.setItem("mp_onboarded_"+user.username,"1");}
+                    else setStep(s=>s+1);
+                  }} style={{flex:2,background:"linear-gradient(135deg,#6B4F0A,#D4AF37,#F5E27A,#D4AF37,#6B4F0A)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:8,padding:"14px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:3,cursor:"pointer"}}>
+                    {isLast?"BETRETEN →":"WEITER →"}
+                  </button>
+                </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24,textAlign:"left"}}>
-                {[["🍑🫦","KI DATE COACH","Opener generieren, Chats analysieren, Antworten optimieren"],["📖","MANPOWER-BIBEL","Wissen, Prinzipien und Lektionen der Bruderschaft"]].map(([icon,title,desc])=>(
-                  <div key={title} style={{background:"rgba(212,175,55,.06)",border:"1px solid rgba(212,175,55,.15)",borderRadius:8,padding:"12px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                    <span style={{fontSize:20}}>{icon}</span>
-                    <div>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"#D4AF37",letterSpacing:2,marginBottom:3}}>{title}</div>
-                      <div style={{fontFamily:"'Lato',sans-serif",fontSize:11,color:"rgba(245,237,232,.55)"}}>{desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={()=>{setShowOnboarding(false);localStorage.setItem("mp_onboarded_"+user.username,"1");}}
-                style={{width:"100%",background:"linear-gradient(135deg,#6B4F0A,#D4AF37,#F5E27A,#D4AF37,#6B4F0A)",backgroundSize:"200% auto",animation:"shimmer 3s linear infinite",border:"none",borderRadius:6,padding:"14px",color:"#0a0806",fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:11,letterSpacing:4,cursor:"pointer"}}>
-                BETRETEN →
-              </button>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* DAILY MOTIVATION BANNER */}
         {dailyMotiv&&(
@@ -2249,10 +2294,16 @@ Bewerte auch diese Antwort des Nutzers – war sie gut oder schlecht? Was hätte
           <div style={{fontFamily:"'Cinzel',serif",fontSize:6,letterSpacing:4,color:"rgba(212,175,55,.12)",marginBottom:8}}>
             MANPOWER BRUDERSCHAFT · {localMem.totalAnalyses||0} ANALYSEN
           </div>
-          <button onClick={()=>setShowLegal(true)}
-            style={{background:"none",border:"1px solid rgba(212,175,55,.15)",borderRadius:12,padding:"4px 12px",color:"rgba(212,175,55,.35)",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,cursor:"pointer"}}>
-            DATENSCHUTZ & INFO
-          </button>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={()=>setShowOnboarding(true)}
+              style={{background:"none",border:"1px solid rgba(212,175,55,.15)",borderRadius:12,padding:"4px 12px",color:"rgba(212,175,55,.35)",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,cursor:"pointer"}}>
+              ❓ HILFE
+            </button>
+            <button onClick={()=>setShowLegal(true)}
+              style={{background:"none",border:"1px solid rgba(212,175,55,.15)",borderRadius:12,padding:"4px 12px",color:"rgba(212,175,55,.35)",fontFamily:"'Cinzel',serif",fontSize:7,letterSpacing:2,cursor:"pointer"}}>
+              DATENSCHUTZ & INFO
+            </button>
+          </div>
         </div>
       </div>
 
